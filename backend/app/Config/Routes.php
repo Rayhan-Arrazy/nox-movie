@@ -46,8 +46,40 @@ $routes->group('admin', ['filter' => 'admin'], function ($routes) {
 
 // ----- API Routes (JSON) -----
 $routes->group('api', function ($routes) {
+    // Local movie API
     $routes->get('movies/featured', 'Api\MovieController::featured');
     $routes->get('movies/trending', 'Api\MovieController::trending');
     $routes->get('movies/genres', 'Api\MovieController::genres');
     $routes->resource('movies', ['controller' => 'Api\MovieController']);
+
+    // TMDB Proxy API
+    $routes->group('tmdb', function ($routes) {
+        // Movie lists
+        $routes->get('popular', 'Api\TmdbController::popular');
+        $routes->get('top-rated', 'Api\TmdbController::topRated');
+        $routes->get('now-playing', 'Api\TmdbController::nowPlaying');
+        $routes->get('upcoming', 'Api\TmdbController::upcoming');
+        $routes->get('trending', 'Api\TmdbController::trending');
+
+        // Search & discover
+        $routes->get('search', 'Api\TmdbController::search');
+        $routes->get('discover', 'Api\TmdbController::discover');
+
+        // Genres & config
+        $routes->get('genres', 'Api\TmdbController::genres');
+        $routes->get('configuration', 'Api\TmdbController::configuration');
+
+        // Single movie sub-resources
+        $routes->get('movie/(:num)', 'Api\TmdbController::movie/$1');
+        $routes->get('movie/(:num)/similar', 'Api\TmdbController::similar/$1');
+        $routes->get('movie/(:num)/recommendations', 'Api\TmdbController::recommendations/$1');
+        $routes->get('movie/(:num)/credits', 'Api\TmdbController::credits/$1');
+        $routes->get('movie/(:num)/videos', 'Api\TmdbController::videos/$1');
+
+        // Person
+        $routes->get('person/(:num)', 'Api\TmdbController::person/$1');
+
+        // Admin import (POST)
+        $routes->post('import', 'Api\TmdbController::import');
+    });
 });

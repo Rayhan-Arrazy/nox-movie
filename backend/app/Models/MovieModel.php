@@ -13,6 +13,7 @@ class MovieModel extends Model
     protected $useSoftDeletes = false;
     protected $protectFields = true;
     protected $allowedFields = [
+        'tmdb_id',
         'title',
         'slug',
         'description',

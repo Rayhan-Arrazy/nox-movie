@@ -1,0 +1,627 @@
+{
+  "info": {
+    "_postman_id": "cineverse-api-collection-v1",
+    "name": "CineVerse API",
+    "description": "Complete API collection for CineVerse movie streaming platform.\n\n## Setup\n1. Set the `base_url` variable to your server (default: http://localhost:8080)\n2. Set `tmdb_token` to your TMDB Read Access Token from https://www.themoviedb.org/settings/api\n3. Run the **Auth / Login (Admin)** request first to get a session cookie\n\n## API Groups\n- **Auth** — Login, Register, Logout\n- **Local Movies API** — CineVerse's own movie database\n- **TMDB Proxy API** — Proxied TMDB endpoints (requires TMDB token in .env)\n- **Admin** — Movie CRUD and user management (requires admin session)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",   "value": "http://localhost:8080",              "type": "string" },
+    { "key": "tmdb_token", "value": "YOUR_TMDB_READ_ACCESS_TOKEN_HERE",  "type": "string" },
+    { "key": "movie_id",   "value": "1",                                  "type": "string" },
+    { "key": "tmdb_movie_id", "value": "550",                             "type": "string", "description": "TMDB movie ID (550 = Fight Club)" },
+    { "key": "user_id",    "value": "2",                                  "type": "string" },
+    { "key": "movie_slug", "value": "neon-nights",                        "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Login successful', () => pm.response.to.have.status(200));",
+            "pm.test('Redirected to admin or home', () => { const url = pm.response.url; pm.expect(url).to.include('localhost'); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email",    "value": "admin@cineverse.com" },
+                { "key": "password", "value": "admin123" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "description": "Login as admin. Session cookie is automatically stored by Postman."
+          }
+        },
+        {
+          "name": "Login (Client)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email",    "value": "john@example.com" },
+                { "key": "password", "value": "client123" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "description": "Login as a regular client user."
+          }
+        },
+        {
+          "name": "Register New User",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Registration returns redirect', () => pm.expect([200, 302, 303]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "name",             "value": "Postman User" },
+                { "key": "email",            "value": "postman@example.com" },
+                { "key": "password",         "value": "postman123" },
+                { "key": "confirm_password", "value": "postman123" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] },
+            "description": "Register a new client account."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] },
+            "description": "Destroy the current session and redirect to login."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🎬 Local Movies API",
+      "description": "CineVerse's own movie database endpoints.",
+      "item": [
+        {
+          "name": "Get All Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Response has data array', () => { const json = pm.response.json(); pm.expect(json.data).to.be.an('array'); });",
+            "pm.test('Status is success', () => pm.expect(pm.response.json().status).to.eql('success'));",
+            "if (pm.response.json().data.length > 0) { pm.collectionVariables.set('movie_id', pm.response.json().data[0].id); pm.collectionVariables.set('movie_slug', pm.response.json().data[0].slug); }"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/movies", "host": ["{{base_url}}"], "path": ["api", "movies"] },
+            "description": "Returns all movies in the local database."
+          }
+        },
+        {
+          "name": "Get All Movies (with limit)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/movies?limit=5",
+              "host": ["{{base_url}}"], "path": ["api", "movies"],
+              "query": [{ "key": "limit", "value": "5" }]
+            }
+          }
+        },
+        {
+          "name": "Search Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/movies?search=neon",
+              "host": ["{{base_url}}"], "path": ["api", "movies"],
+              "query": [{ "key": "search", "value": "neon" }]
+            },
+            "description": "Search movies by title, description, director, or cast."
+          }
+        },
+        {
+          "name": "Filter by Genre",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/movies?genre=Action",
+              "host": ["{{base_url}}"], "path": ["api", "movies"],
+              "query": [{ "key": "genre", "value": "Action" }]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('All movies are featured', () => { pm.response.json().data.forEach(m => pm.expect(m.is_featured).to.eql(1)); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/movies/featured", "host": ["{{base_url}}"], "path": ["api", "movies", "featured"] }
+          }
+        },
+        {
+          "name": "Get Trending Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('All movies are trending', () => { pm.response.json().data.forEach(m => pm.expect(m.is_trending).to.eql(1)); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/movies/trending", "host": ["{{base_url}}"], "path": ["api", "movies", "trending"] }
+          }
+        },
+        {
+          "name": "Get All Genres",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Genres is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/movies/genres", "host": ["{{base_url}}"], "path": ["api", "movies", "genres"] }
+          }
+        },
+        {
+          "name": "Get Single Movie (by slug)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Movie has title', () => pm.expect(pm.response.json().data.title).to.be.a('string'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/movies/{{movie_slug}}", "host": ["{{base_url}}"], "path": ["api", "movies", "{{movie_slug}}"] },
+            "description": "Get a single movie by its slug. Uses the ResourceController show() method."
+          }
+        },
+        {
+          "name": "Create Movie (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "if (pm.response.json().data) pm.collectionVariables.set('movie_id', pm.response.json().data.id);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Movie\",\n  \"description\": \"A movie created via Postman for testing purposes.\",\n  \"genre\": \"Action\",\n  \"year\": 2026,\n  \"duration\": 120,\n  \"rating\": 8.0,\n  \"poster_url\": \"https://placehold.co/500x750/1a1a2e/c8ff00?text=Postman\",\n  \"backdrop_url\": \"https://placehold.co/1280x720/1a1a2e/c8ff00?text=Postman\",\n  \"is_featured\": 1,\n  \"is_trending\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/movies", "host": ["{{base_url}}"], "path": ["api", "movies"] },
+            "description": "Create a new movie via the REST API."
+          }
+        },
+        {
+          "name": "Update Movie (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Movie (Updated)\",\n  \"rating\": 9.0,\n  \"is_featured\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/movies/{{movie_id}}", "host": ["{{base_url}}"], "path": ["api", "movies", "{{movie_id}}"] }
+          }
+        },
+        {
+          "name": "Delete Movie (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Deleted message', () => pm.expect(pm.response.json().message).to.include('deleted'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/movies/{{movie_id}}", "host": ["{{base_url}}"], "path": ["api", "movies", "{{movie_id}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🌐 TMDB Proxy API",
+      "description": "Proxied TMDB API endpoints. Requires TMDB_API_TOKEN set in backend/.env\n\nGet your token at: https://www.themoviedb.org/settings/api",
+      "item": [
+        {
+          "name": "Popular Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+            "pm.test('Has pagination meta', () => pm.expect(pm.response.json().meta).to.have.property('total_results'));",
+            "if (pm.response.json().data.length > 0) pm.collectionVariables.set('tmdb_movie_id', pm.response.json().data[0].tmdb_id);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tmdb/popular?page=1",
+              "host": ["{{base_url}}"], "path": ["api", "tmdb", "popular"],
+              "query": [{ "key": "page", "value": "1" }]
+            },
+            "description": "Get popular movies from TMDB, mapped to CineVerse format."
+          }
+        },
+        {
+          "name": "Top Rated Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Movies have high ratings', () => { pm.response.json().data.slice(0,5).forEach(m => pm.expect(m.rating).to.be.above(7)); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/top-rated", "host": ["{{base_url}}"], "path": ["api", "tmdb", "top-rated"] }
+          }
+        },
+        {
+          "name": "Now Playing",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/now-playing", "host": ["{{base_url}}"], "path": ["api", "tmdb", "now-playing"] }
+          }
+        },
+        {
+          "name": "Upcoming Movies",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/upcoming", "host": ["{{base_url}}"], "path": ["api", "tmdb", "upcoming"] }
+          }
+        },
+        {
+          "name": "Trending This Week",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has trending movies', () => pm.expect(pm.response.json().data.length).to.be.above(0));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tmdb/trending?window=week",
+              "host": ["{{base_url}}"], "path": ["api", "tmdb", "trending"],
+              "query": [{ "key": "window", "value": "week", "description": "day or week" }]
+            }
+          }
+        },
+        {
+          "name": "Trending Today",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tmdb/trending?window=day",
+              "host": ["{{base_url}}"], "path": ["api", "tmdb", "trending"],
+              "query": [{ "key": "window", "value": "day" }]
+            }
+          }
+        },
+        {
+          "name": "Search Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Search returns results', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tmdb/search?q=Avengers",
+              "host": ["{{base_url}}"], "path": ["api", "tmdb", "search"],
+              "query": [
+                { "key": "q",    "value": "Avengers", "description": "Search query" },
+                { "key": "page", "value": "1",        "disabled": true }
+              ]
+            },
+            "description": "Search TMDB for movies by title."
+          }
+        },
+        {
+          "name": "Search Movies (Missing Query)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 400 error', () => pm.response.to.have.status(400));",
+            "pm.test('Error message present', () => pm.expect(pm.response.json().message).to.include('required'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/search", "host": ["{{base_url}}"], "path": ["api", "tmdb", "search"] },
+            "description": "Should return 400 when query parameter is missing."
+          }
+        },
+        {
+          "name": "Discover Movies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tmdb/discover?with_genres=28&sort_by=popularity.desc",
+              "host": ["{{base_url}}"], "path": ["api", "tmdb", "discover"],
+              "query": [
+                { "key": "with_genres", "value": "28",               "description": "TMDB genre ID (28=Action)" },
+                { "key": "sort_by",     "value": "popularity.desc",  "description": "Sort order" },
+                { "key": "page",        "value": "1",                "disabled": true },
+                { "key": "year",        "value": "2024",             "disabled": true }
+              ]
+            },
+            "description": "Discover movies with filters. Genre IDs: 28=Action, 878=Sci-Fi, 18=Drama, 27=Horror, 35=Comedy"
+          }
+        },
+        {
+          "name": "Get TMDB Genres",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has genres array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+            "pm.test('Genres have id and name', () => { const g = pm.response.json().data[0]; pm.expect(g).to.have.property('id'); pm.expect(g).to.have.property('name'); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/genres", "host": ["{{base_url}}"], "path": ["api", "tmdb", "genres"] }
+          }
+        },
+        {
+          "name": "Get API Configuration",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has image config', () => pm.expect(pm.response.json().data).to.have.property('images'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/configuration", "host": ["{{base_url}}"], "path": ["api", "tmdb", "configuration"] },
+            "description": "Returns TMDB configuration including image base URLs and available sizes."
+          }
+        },
+        {
+          "name": "Movie Detail (by TMDB ID)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Movie has title', () => pm.expect(pm.response.json().data.title).to.be.a('string'));",
+            "pm.test('Movie has poster', () => pm.expect(pm.response.json().data.poster_url).to.include('http'));",
+            "pm.test('Movie has cast', () => pm.expect(pm.response.json().data.cast).to.be.a('string'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/movie/{{tmdb_movie_id}}", "host": ["{{base_url}}"], "path": ["api", "tmdb", "movie", "{{tmdb_movie_id}}"] },
+            "description": "Get full movie detail from TMDB including credits and videos. Default ID 550 = Fight Club."
+          }
+        },
+        {
+          "name": "Similar Movies",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/movie/{{tmdb_movie_id}}/similar", "host": ["{{base_url}}"], "path": ["api", "tmdb", "movie", "{{tmdb_movie_id}}", "similar"] }
+          }
+        },
+        {
+          "name": "Recommendations",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/movie/{{tmdb_movie_id}}/recommendations", "host": ["{{base_url}}"], "path": ["api", "tmdb", "movie", "{{tmdb_movie_id}}", "recommendations"] }
+          }
+        },
+        {
+          "name": "Movie Credits",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has director', () => pm.expect(pm.response.json().data.director).to.be.an('object'));",
+            "pm.test('Has cast array', () => pm.expect(pm.response.json().data.cast).to.be.an('array'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/movie/{{tmdb_movie_id}}/credits", "host": ["{{base_url}}"], "path": ["api", "tmdb", "movie", "{{tmdb_movie_id}}", "credits"] }
+          }
+        },
+        {
+          "name": "Movie Videos (Trailers)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Videos have YouTube URLs', () => { pm.response.json().data.filter(v => v.site === 'YouTube').forEach(v => pm.expect(v.youtube_url).to.include('youtube.com')); });"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/movie/{{tmdb_movie_id}}/videos", "host": ["{{base_url}}"], "path": ["api", "tmdb", "movie", "{{tmdb_movie_id}}", "videos"] }
+          }
+        },
+        {
+          "name": "Person Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/tmdb/person/287", "host": ["{{base_url}}"], "path": ["api", "tmdb", "person", "287"] },
+            "description": "Get person details. ID 287 = Brad Pitt."
+          }
+        },
+        {
+          "name": "Import TMDB Movies (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Import completed', () => pm.expect(pm.response.json().status).to.eql('success'));",
+            "pm.test('Has import count', () => pm.expect(pm.response.json().imported).to.be.a('number'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"popular\",\n  \"pages\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tmdb/import", "host": ["{{base_url}}"], "path": ["api", "tmdb", "import"] },
+            "description": "Import movies from TMDB into the local database. Requires admin session.\n\nBody options:\n- source: popular | top_rated | trending | now_playing\n- pages: 1-5 (each page = 20 movies)"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🛡️ Admin Panel",
+      "description": "Admin web routes for movie and user management. Requires admin session cookie.",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200 (admin logged in)', () => pm.response.to.have.status(200));",
+            "pm.test('Contains dashboard content', () => pm.expect(pm.response.text()).to.include('Admin Dashboard'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin", "host": ["{{base_url}}"], "path": ["admin"] }
+          }
+        },
+        {
+          "name": "Admin - Movie List (Dashboard)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin", "host": ["{{base_url}}"], "path": ["admin"] }
+          }
+        },
+        {
+          "name": "Admin - Add Movie Form",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin/movies/create", "host": ["{{base_url}}"], "path": ["admin", "movies", "create"] }
+          }
+        },
+        {
+          "name": "Admin - Store Movie",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "title",       "value": "Admin Created Movie" },
+                { "key": "description", "value": "Created via admin panel" },
+                { "key": "genre",       "value": "Drama" },
+                { "key": "year",        "value": "2026" },
+                { "key": "duration",    "value": "95" },
+                { "key": "rating",      "value": "7.5" },
+                { "key": "is_featured", "value": "1" },
+                { "key": "is_trending", "value": "0" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/admin/movies/store", "host": ["{{base_url}}"], "path": ["admin", "movies", "store"] }
+          }
+        },
+        {
+          "name": "Admin - Edit Movie Form",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin/movies/edit/{{movie_id}}", "host": ["{{base_url}}"], "path": ["admin", "movies", "edit", "{{movie_id}}"] }
+          }
+        },
+        {
+          "name": "Admin - Update Movie",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "title",       "value": "Updated Movie Title" },
+                { "key": "description", "value": "Updated description" },
+                { "key": "genre",       "value": "Action" },
+                { "key": "year",        "value": "2026" },
+                { "key": "duration",    "value": "110" },
+                { "key": "rating",      "value": "8.5" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/admin/movies/update/{{movie_id}}", "host": ["{{base_url}}"], "path": ["admin", "movies", "update", "{{movie_id}}"] }
+          }
+        },
+        {
+          "name": "Admin - Delete Movie",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin/movies/delete/{{movie_id}}", "host": ["{{base_url}}"], "path": ["admin", "movies", "delete", "{{movie_id}}"] }
+          }
+        },
+        {
+          "name": "Admin - User List",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contains users table', () => pm.expect(pm.response.text()).to.include('Manage Users'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin/users", "host": ["{{base_url}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "Admin - Delete User",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/admin/users/delete/{{user_id}}", "host": ["{{base_url}}"], "path": ["admin", "users", "delete", "{{user_id}}"] },
+            "description": "Delete a user by ID. Cannot delete your own account."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📄 Pages",
+      "description": "Public and authenticated page routes.",
+      "item": [
+        {
+          "name": "Home Page",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contains CineVerse', () => pm.expect(pm.response.text()).to.include('CineVerse'));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] } }
+        },
+        {
+          "name": "Browse Page",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/browse", "host": ["{{base_url}}"], "path": ["browse"] } }
+        },
+        {
+          "name": "Movie Detail Page",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/movie/{{movie_slug}}", "host": ["{{base_url}}"], "path": ["movie", "{{movie_slug}}"] } }
+        },
+        {
+          "name": "Watch Page (requires login)",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/watch/{{movie_slug}}", "host": ["{{base_url}}"], "path": ["watch", "{{movie_slug}}"] } }
+        },
+        {
+          "name": "Favorites (requires login)",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/favorites", "host": ["{{base_url}}"], "path": ["favorites"] } }
+        },
+        {
+          "name": "Collections (requires login)",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/collections", "host": ["{{base_url}}"], "path": ["collections"] } }
+        },
+        {
+          "name": "Settings (requires login)",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/settings", "host": ["{{base_url}}"], "path": ["settings"] } }
+        },
+        {
+          "name": "About Page",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/about", "host": ["{{base_url}}"], "path": ["about"] } }
+        },
+        {
+          "name": "Contact Page",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/contact", "host": ["{{base_url}}"], "path": ["contact"] } }
+        },
+        {
+          "name": "Help Center",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/help", "host": ["{{base_url}}"], "path": ["help"] } }
+        },
+        {
+          "name": "Privacy Policy",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/privacy", "host": ["{{base_url}}"], "path": ["privacy"] } }
+        },
+        {
+          "name": "Careers",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/careers", "host": ["{{base_url}}"], "path": ["careers"] } }
+        },
+        {
+          "name": "Press",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/press", "host": ["{{base_url}}"], "path": ["press"] } }
+        }
+      ]
+    }
+  ]
+}
