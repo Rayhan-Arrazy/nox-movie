@@ -3,7 +3,7 @@
 <?= $this->section('content') ?>
 
 <!-- Hero Section -->
-<section id="hero-section" class="relative h-[75vh] min-h-[500px] overflow-hidden bg-dark">
+<section id="hero-section" class="relative h-[75vh] min-h-[500px] overflow-hidden bg-[#0a0908]">
     <div class="absolute inset-0 skeleton"></div>
     <div class="absolute bottom-16 left-6 space-y-3 z-10">
         <div class="skeleton h-3 w-28 rounded-full"></div>
@@ -18,17 +18,17 @@
 
 <!-- Continue Watching (if logged in) -->
 <?php if (session()->get('isLoggedIn')): ?>
-    <section class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-8 relative z-10 mb-6">
-        <div class="bg-dark-200 rounded-2xl p-5 border border-white/5">
+    <section id="continue-watching-section" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-8 relative z-10 mb-6">
+        <div class="bg-[#1a1714] rounded-2xl p-5 border border-white/5">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="play-circle" class="w-5 h-5 text-lime"></i>
+                    <i data-lucide="play-circle" class="w-5 h-5 text-[#e8b84b]"></i>
                     <h2 class="text-base font-semibold font-display text-white">Continue Watching</h2>
                 </div>
-                <a href="/browse" class="text-xs text-lime hover:underline">Show all</a>
+                <a href="/browse" class="text-xs text-[#e8b84b] hover:underline">Browse more</a>
             </div>
             <div id="continue-watching" class="scroll-container flex gap-3">
-                <!-- Populated by JS -->
+                <p class="text-sm text-[#7a6e60] py-4">Movies you watch will appear here.</p>
             </div>
         </div>
     </section>
@@ -37,7 +37,7 @@
 <!-- Movie Sections -->
 <div id="movie-sections" class="relative z-10 space-y-2 pb-10">
     <div class="flex items-center justify-center py-10">
-        <div class="w-7 h-7 border-[3px] border-dark-400 border-t-lime rounded-full animate-spin"></div>
+        <div class="w-7 h-7 border-[3px] border-[#2e2920] border-t-[#e8b84b] rounded-full animate-spin"></div>
     </div>
 </div>
 
@@ -50,24 +50,7 @@
         ]);
 
         initHero(featured);
-
-        // Continue watching (show first 5 trending as demo)
-        const cw = document.getElementById('continue-watching');
-        if (cw && trending.length > 0) {
-            cw.innerHTML = trending.slice(0, 5).map((m, i) => `
-                <a href="/movie/${m.slug}" class="flex-shrink-0 w-[260px] bg-dark-300 rounded-xl overflow-hidden border border-white/5 hover:border-lime/20 transition-all group">
-                    <div class="relative h-32 overflow-hidden">
-                        <img src="${m.backdrop_url}" alt="${m.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                        <div class="absolute inset-0 bg-gradient-to-t from-dark-300 to-transparent"></div>
-                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-dark-400"><div class="h-full bg-lime rounded-r" style="width: ${30 + i * 15}%"></div></div>
-                    </div>
-                    <div class="p-3">
-                        <h4 class="text-xs font-semibold text-white truncate">${m.title}</h4>
-                        <p class="text-[10px] text-gray-500">Season 1 • Episode ${i + 1}</p>
-                    </div>
-                </a>
-            `).join('');
-        }
+        loadContinueWatching();
 
         // Group movies by genre
         const byGenre = {};
