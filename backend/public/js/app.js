@@ -176,7 +176,8 @@ function createMovieCard(movie, index = 0) {
   return `
     <a href="/movie/${movie.slug}" class="movie-card group block rounded-2xl overflow-hidden relative" style="animation-delay:${index * 60}ms">
       <div class="relative aspect-[2/3] overflow-hidden bg-[#1a1714] rounded-2xl">
-        <img src="${movie.poster_url}" alt="${movie.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://placehold.co/300x450/1a1714/e8b84b?text=${encodeURIComponent(movie.title)}'" />
+        <img src="${movie.poster_url}" alt="${movie.title}" class="w-full h-full object-cover" loading="lazy"
+          onerror="this.onerror=null;this.src='https://placehold.co/300x450/1a1714/e8b84b?text=${encodeURIComponent(movie.title.substring(0, 20))}'" />
         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
         <div class="card-overlay absolute inset-0 bg-[rgba(232,184,75,0.05)] flex items-center justify-center">
           <div class="w-12 h-12 rounded-full bg-[#e8b84b] flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">

@@ -1,0 +1,216 @@
+{
+    "1": {
+        "title": "The Shawshank Redemption",
+        "types": {
+            "poster": 1
+        }
+    },
+    "2": {
+        "title": "Moana 2",
+        "types": {
+            "poster": 1
+        }
+    },
+    "3": {
+        "title": "The Dark Knight",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "4": {
+        "title": "Schindler's List",
+        "types": {
+            "poster": 1
+        }
+    },
+    "6": {
+        "title": "Inception",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "7": {
+        "title": "The Lord of the Rings: The Return of the King",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "8": {
+        "title": "Forrest Gump",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "12": {
+        "title": "Wicked",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "13": {
+        "title": "Parasite",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "14": {
+        "title": "Joker",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "16": {
+        "title": "The Godfather",
+        "types": {
+            "poster": 1
+        }
+    },
+    "17": {
+        "title": "Top Gun: Maverick",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "18": {
+        "title": "Oppenheimer",
+        "types": {
+            "poster": 1
+        }
+    },
+    "19": {
+        "title": "Inside Out 2",
+        "types": {
+            "poster": 1,
+            "backdrop": 1
+        }
+    },
+    "21": {
+        "title": "Gladiator",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "23": {
+        "title": "Whiplash",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "24": {
+        "title": "The Silence of the Lambs",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "25": {
+        "title": "Avatar",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "26": {
+        "title": "Everything Everywhere All at Once",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "28": {
+        "title": "Get Out",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "29": {
+        "title": "Mad Max: Fury Road",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "30": {
+        "title": "La La Land",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "32": {
+        "title": "Arrival",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "33": {
+        "title": "A Complete Unknown",
+        "types": {
+            "poster": 1
+        }
+    },
+    "34": {
+        "title": "Alien: Romulus",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "35": {
+        "title": "Longlegs",
+        "types": {
+            "poster": 1,
+            "backdrop": 1
+        }
+    },
+    "36": {
+        "title": "Furiosa: A Mad Max Saga",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "37": {
+        "title": "Hereditary",
+        "types": {
+            "poster": 1,
+            "backdrop": 1
+        }
+    },
+    "38": {
+        "title": "The Wild Robot",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "39": {
+        "title": "John Wick",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "40": {
+        "title": "The Grand Budapest Hotel",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "43": {
+        "title": "A Quiet Place",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "44": {
+        "title": "Conclave",
+        "types": {
+            "poster": 1,
+            "backdrop": 1
+        }
+    },
+    "45": {
+        "title": "Poor Things",
+        "types": {
+            "backdrop": 1
+        }
+    },
+    "46": {
+        "title": "Gladiator II",
+        "types": {
+            "backdrop": 1
+        }
+    }
+}

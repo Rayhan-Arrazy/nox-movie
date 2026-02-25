@@ -53,7 +53,7 @@
 </div>
 
 <script>
-    // Pass movie data to JS
+    // Pass movie data to JS (including trailer)
     window.CURRENT_MOVIE = <?= json_encode([
         'id' => $movie['id'],
         'title' => $movie['title'],
@@ -64,6 +64,7 @@
         'poster_url' => $movie['poster_url'],
         'backdrop_url' => $movie['backdrop_url'],
         'duration' => $movie['duration'],
+        'trailer_url' => $movie['trailer_url'] ?? '',
     ]) ?>;
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -72,11 +73,19 @@
             recordWatch(window.CURRENT_MOVIE);
         }
 
-        // Inject YouTube iframe
+        // Extract YouTube video ID from trailer_url
+        let ytId = 'NvT7aGbAP14'; // fallback
+        const trailerUrl = window.CURRENT_MOVIE.trailer_url || '';
+        if (trailerUrl) {
+            const match = trailerUrl.match(/(?:v=|\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+            if (match) ytId = match[1];
+        }
+
+        // Inject YouTube iframe with the movie's actual trailer
         const wrapper = document.getElementById('yt-embed-wrapper');
         wrapper.innerHTML = `
             <iframe
-                src="https://www.youtube.com/embed/NvT7aGbAP14?autoplay=1&rel=0&modestbranding=1"
+                src="https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1"
                 class="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowfullscreen
