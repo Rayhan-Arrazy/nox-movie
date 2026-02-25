@@ -3,7 +3,7 @@
 <?= $this->section('content') ?>
 
 <!-- Hero Section -->
-<section id="hero-section" class="relative h-[75vh] min-h-[500px] overflow-hidden bg-[#0a0908]">
+<section id="hero-section" class="relative h-[75vh] min-h-[500px] overflow-hidden bg-[#06060f]">
     <div class="absolute inset-0 skeleton"></div>
     <div class="absolute bottom-16 left-6 space-y-3 z-10">
         <div class="skeleton h-3 w-28 rounded-full"></div>
@@ -19,16 +19,16 @@
 <!-- Continue Watching (if logged in) -->
 <?php if (session()->get('isLoggedIn')): ?>
     <section id="continue-watching-section" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-8 relative z-10 mb-6">
-        <div class="bg-[#1a1714] rounded-2xl p-5 border border-white/5">
+        <div class="bg-[#0f0f22] rounded-2xl p-5 border border-white/5">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="play-circle" class="w-5 h-5 text-[#e8b84b]"></i>
+                    <i data-lucide="play-circle" class="w-5 h-5 text-[#7c5cfc]"></i>
                     <h2 class="text-base font-semibold font-display text-white">Continue Watching</h2>
                 </div>
-                <a href="/browse" class="text-xs text-[#e8b84b] hover:underline">Browse more</a>
+                <a href="/browse" class="text-xs text-[#7c5cfc] hover:underline">Browse more</a>
             </div>
             <div id="continue-watching" class="scroll-container flex gap-3">
-                <p class="text-sm text-[#7a6e60] py-4">Movies you watch will appear here.</p>
+                <p class="text-sm text-[#6b6b9a] py-4">Movies you watch will appear here.</p>
             </div>
         </div>
     </section>
@@ -37,7 +37,7 @@
 <!-- Movie Sections -->
 <div id="movie-sections" class="relative z-10 space-y-2 pb-10">
     <div class="flex items-center justify-center py-10">
-        <div class="w-7 h-7 border-[3px] border-[#2e2920] border-t-[#e8b84b] rounded-full animate-spin"></div>
+        <div class="w-7 h-7 border-[3px] border-[#1c1c38] border-t-[#7c5cfc] rounded-full animate-spin"></div>
     </div>
 </div>
 

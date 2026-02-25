@@ -8,7 +8,7 @@
         <!-- Header -->
         <div class="flex items-center gap-4 mb-6">
             <a href="/admin"
-                class="w-10 h-10 rounded-xl bg-dark-300 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-all">
+                class="w-10 h-10 rounded-xl bg-[#15152d] border border-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-all">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
             </a>
             <div>
@@ -20,7 +20,7 @@
         </div>
 
         <!-- Users Table -->
-        <div class="bg-dark-200 rounded-2xl border border-white/5 overflow-hidden">
+        <div class="bg-[#0f0f22] rounded-2xl border border-white/5 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full admin-table">
                     <thead>
@@ -48,7 +48,7 @@
                                 <td class="px-5 py-3">
                                     <div class="flex items-center gap-3">
                                         <div
-                                            class="w-9 h-9 rounded-lg bg-gradient-to-br from-lime/60 to-green-600 flex items-center justify-center text-dark font-bold text-xs flex-shrink-0">
+                                            class="w-9 h-9 rounded-lg bg-gradient-to-br from-lime/60 to-green-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                                             <?= strtoupper(substr($user['name'], 0, 1)) ?>
                                         </div>
                                         <p class="text-xs font-semibold text-white">
@@ -61,7 +61,7 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     <span
-                                        class="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase <?= $user['role'] === 'admin' ? 'bg-lime/15 text-lime' : 'bg-blue-500/15 text-blue-400' ?>">
+                                        class="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase <?= $user['role'] === 'admin' ? 'bg-[#7c5cfc]/15 text-[#a78bfa]' : 'bg-blue-500/15 text-blue-400' ?>">
                                         <?= esc($user['role']) ?>
                                     </span>
                                 </td>

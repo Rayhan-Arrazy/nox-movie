@@ -1,6 +1,6 @@
 /* ============================
-   CineVerse - Main JavaScript
-   Cinema Theme (Warm Amber)
+   NOX Movie � Main JavaScript
+   Night Cinema � Electric Violet
    ============================ */
 
 const API_BASE = '/api';
@@ -57,7 +57,7 @@ function toggleFavorite(movieId, btn) {
   lsSet(LS_FAVORITES, favs);
 
   if (btn) {
-    btn.classList.toggle('text-amber-400', !wasFav);
+    btn.classList.toggle('text-[#a78bfa]', !wasFav);
     btn.classList.toggle('text-white/40', wasFav);
     btn.title = wasFav ? 'Add to Favorites' : 'Remove from Favorites';
     // animate
@@ -82,7 +82,7 @@ function toggleCollection(movieId, btn) {
   lsSet(LS_COLLECTIONS, cols);
 
   if (btn) {
-    btn.classList.toggle('text-amber-400', !wasIn);
+    btn.classList.toggle('text-[#a78bfa]', !wasIn);
     btn.classList.toggle('text-white/40', wasIn);
     btn.title = wasIn ? 'Bookmark' : 'Remove Bookmark';
     btn.style.transform = 'scale(1.4)';
@@ -111,7 +111,7 @@ function showToast(msg, type = 'success') {
 
   const div = document.createElement('div');
   div.id = 'dynamic-toast';
-  div.className = `fixed top-20 right-4 lg:right-8 z-[100] animate-fade-in-up bg-[#1a1714] border rounded-xl px-5 py-3 shadow-2xl max-w-xs ${type === 'error' ? 'border-red-500/30 toast-error' : 'border-[rgba(232,184,75,0.3)] toast-success'}`;
+  div.className = `fixed top-20 right-4 lg:right-8 z-[100] animate-fade-in-up bg-[#0f0f22] border rounded-xl px-5 py-3 shadow-2xl max-w-xs ${type === 'error' ? 'border-red-500/30 toast-error' : 'border-[rgba(124,92,252,0.3)] toast-success'}`;
   div.innerHTML = `<p class="text-sm text-white font-medium">${msg}</p>`;
   document.body.appendChild(div);
   setTimeout(() => div.remove(), 3000);
@@ -150,7 +150,7 @@ function toggleNotifications() {
 
 function markAllRead() {
   document.querySelectorAll('.notif-unread').forEach(el => {
-    el.classList.remove('notif-unread', 'bg-[rgba(232,184,75,0.05)]');
+    el.classList.remove('notif-unread', 'bg-[rgba(124,92,252,0.05)]');
   });
   const dot = document.getElementById('notif-dot');
   if (dot) dot.classList.add('hidden');
@@ -170,30 +170,30 @@ document.addEventListener('click', (e) => {
 
 // ─── Movie Card ─────────────────────────────────────────
 function createMovieCard(movie, index = 0) {
-  const favClass = isFavorite(movie.id) ? 'text-amber-400' : 'text-white/40';
-  const bookClass = isBookmarked(movie.id) ? 'text-amber-400' : 'text-white/40';
+  const favClass = isFavorite(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
+  const bookClass = isBookmarked(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
 
   return `
     <a href="/movie/${movie.slug}" class="movie-card group block rounded-2xl overflow-hidden relative" style="animation-delay:${index * 60}ms">
-      <div class="relative aspect-[2/3] overflow-hidden bg-[#1a1714] rounded-2xl">
+      <div class="relative aspect-[2/3] overflow-hidden bg-[#0f0f22] rounded-2xl">
         <img src="${movie.poster_url}" alt="${movie.title}" class="w-full h-full object-cover" loading="lazy"
-          onerror="this.onerror=null;this.src='https://placehold.co/300x450/1a1714/e8b84b?text=${encodeURIComponent(movie.title.substring(0, 20))}'" />
+          onerror="this.onerror=null;this.src='https://placehold.co/300x450/0f0f22/7c5cfc?text=${encodeURIComponent(movie.title.substring(0, 20))}'" />
         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-        <div class="card-overlay absolute inset-0 bg-[rgba(232,184,75,0.05)] flex items-center justify-center">
-          <div class="w-12 h-12 rounded-full bg-[#e8b84b] flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
-            <svg class="w-5 h-5 text-[#0a0908] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <div class="card-overlay absolute inset-0 bg-[rgba(124,92,252,0.05)] flex items-center justify-center">
+          <div class="w-12 h-12 rounded-full bg-[#7c5cfc] flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
+            <svg class="w-5 h-5 text-[#06060f] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </div>
         </div>
         <!-- Favorite Heart -->
         <button onclick="event.preventDefault();event.stopPropagation();toggleFavorite(${movie.id},this)"
-          class="absolute top-2.5 right-2.5 ${favClass} hover:text-amber-400 transition-all z-10"
+          class="absolute top-2.5 right-2.5 ${favClass} hover:text-[#a78bfa] transition-all z-10"
           title="${isFavorite(movie.id) ? 'Remove from Favorites' : 'Add to Favorites'}"
           style="transition: transform 0.25s ease">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
         <!-- Genre Badge -->
         <div class="absolute top-2.5 left-2.5">
-          <span class="px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase bg-black/60 text-[#e8b84b] backdrop-blur-sm">${movie.genre}</span>
+          <span class="px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase bg-black/60 text-[#7c5cfc] backdrop-blur-sm">${movie.genre}</span>
         </div>
         <!-- Bottom Info -->
         <div class="absolute bottom-0 left-0 right-0 p-3">
@@ -205,8 +205,8 @@ function createMovieCard(movie, index = 0) {
               <span>${formatDuration(movie.duration)}</span>
             </div>
             <div class="flex items-center gap-0.5">
-              <svg class="w-3 h-3 text-[#e8b84b] star-glow" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              <span class="text-[10px] font-bold text-[#e8b84b]">${movie.rating}</span>
+              <svg class="w-3 h-3 text-[#7c5cfc] star-glow" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span class="text-[10px] font-bold text-[#7c5cfc]">${movie.rating}</span>
             </div>
           </div>
         </div>
@@ -226,13 +226,13 @@ function createMovieRow(title, subtitle, movies, id) {
       <div class="flex items-end justify-between mb-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div>
           <h2 class="text-base sm:text-lg font-bold text-white font-display">${title}</h2>
-          ${subtitle ? `<p class="text-[11px] text-[#7a6e60] mt-0.5">${subtitle}</p>` : ''}
+          ${subtitle ? `<p class="text-[11px] text-[#6b6b9a] mt-0.5">${subtitle}</p>` : ''}
         </div>
         <div class="flex gap-1.5">
-          <button onclick="scrollRow('${sectionId}','left')" class="p-1.5 rounded-lg bg-[#242019] text-[#7a6e60] hover:text-[#e8b84b] hover:bg-[rgba(232,184,75,0.1)] transition-all border border-white/5">
+          <button onclick="scrollRow('${sectionId}','left')" class="p-1.5 rounded-lg bg-[#15152d] text-[#6b6b9a] hover:text-[#a78bfa] hover:bg-[rgba(124,92,252,0.1)] transition-all border border-white/5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <button onclick="scrollRow('${sectionId}','right')" class="p-1.5 rounded-lg bg-[#242019] text-[#7a6e60] hover:text-[#e8b84b] hover:bg-[rgba(232,184,75,0.1)] transition-all border border-white/5">
+          <button onclick="scrollRow('${sectionId}','right')" class="p-1.5 rounded-lg bg-[#15152d] text-[#6b6b9a] hover:text-[#a78bfa] hover:bg-[rgba(124,92,252,0.1)] transition-all border border-white/5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
@@ -265,12 +265,12 @@ function renderHero() {
   if (!container || !m) return;
 
   const dots = heroMovies.map((_, i) =>
-    `<button onclick="heroGoTo(${i})" class="transition-all duration-300 rounded-full ${i === heroIndex ? 'w-6 h-1.5 bg-[#e8b84b]' : 'w-1.5 h-1.5 bg-white/20 hover:bg-white/40'}"></button>`
+    `<button onclick="heroGoTo(${i})" class="transition-all duration-300 rounded-full ${i === heroIndex ? 'w-6 h-1.5 bg-[#7c5cfc]' : 'w-1.5 h-1.5 bg-white/20 hover:bg-white/40'}"></button>`
   ).join('');
 
   const favBtn = isFavorite(m.id)
-    ? `<button id="hero-fav-btn" onclick="toggleFavorite(${m.id},this)" class="w-11 h-11 rounded-xl bg-[rgba(232,184,75,0.15)] backdrop-blur-sm flex items-center justify-center text-[#e8b84b] border border-[rgba(232,184,75,0.3)] transition-all" title="Remove from Favorites"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>`
-    : `<button id="hero-fav-btn" onclick="toggleFavorite(${m.id},this)" class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-[#e8b84b] border border-white/10 transition-all" title="Add to Favorites"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>`;
+    ? `<button id="hero-fav-btn" onclick="toggleFavorite(${m.id},this)" class="w-11 h-11 rounded-xl bg-[rgba(124,92,252,0.15)] backdrop-blur-sm flex items-center justify-center text-[#7c5cfc] border border-[rgba(124,92,252,0.3)] transition-all" title="Remove from Favorites"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>`
+    : `<button id="hero-fav-btn" onclick="toggleFavorite(${m.id},this)" class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-[#a78bfa] border border-white/10 transition-all" title="Add to Favorites"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>`;
 
   container.innerHTML = `
     <div class="absolute inset-0">
@@ -282,13 +282,13 @@ function renderHero() {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="max-w-xl animate-fade-in-up">
           <div class="flex items-center gap-2 mb-3 flex-wrap">
-            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[rgba(232,184,75,0.15)] text-[#e8b84b] border border-[rgba(232,184,75,0.25)]">
+            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[rgba(124,92,252,0.15)] text-[#7c5cfc] border border-[rgba(124,92,252,0.25)]">
               🎬 Featured
             </span>
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#242019]/80 text-gray-400 backdrop-blur-sm">${m.genre}</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#15152d]/80 text-gray-400 backdrop-blur-sm">${m.genre}</span>
             <div class="flex items-center gap-0.5">
-              <svg class="w-3 h-3 text-[#e8b84b] star-glow" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              <span class="text-[11px] font-bold text-[#e8b84b]">${m.rating}</span>
+              <svg class="w-3 h-3 text-[#7c5cfc] star-glow" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span class="text-[11px] font-bold text-[#7c5cfc]">${m.rating}</span>
             </div>
           </div>
           <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-3 font-display">${m.title}</h1>
@@ -308,11 +308,11 @@ function renderHero() {
       </div>
     </div>
     <div class="absolute bottom-6 right-4 sm:right-8 z-20 flex items-center gap-2.5">
-      <button onclick="heroPrev()" class="p-2 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 text-white/60 hover:text-[#e8b84b] hover:border-[rgba(232,184,75,0.3)] transition-all">
+      <button onclick="heroPrev()" class="p-2 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 text-white/60 hover:text-[#a78bfa] hover:border-[rgba(124,92,252,0.3)] transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="flex items-center gap-1">${dots}</div>
-      <button onclick="heroNext()" class="p-2 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 text-white/60 hover:text-[#e8b84b] hover:border-[rgba(232,184,75,0.3)] transition-all">
+      <button onclick="heroNext()" class="p-2 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 text-white/60 hover:text-[#a78bfa] hover:border-[rgba(124,92,252,0.3)] transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
@@ -338,22 +338,22 @@ function loadContinueWatching() {
 
   if (section) section.style.display = '';
   cw.innerHTML = hist.slice(0, 8).map((m, i) => `
-    <a href="/watch/${m.slug}" class="flex-shrink-0 w-[260px] bg-[#1a1714] rounded-xl overflow-hidden border border-white/5 hover:border-[rgba(232,184,75,0.2)] transition-all group">
+    <a href="/watch/${m.slug}" class="flex-shrink-0 w-[260px] bg-[#0f0f22] rounded-xl overflow-hidden border border-white/5 hover:border-[rgba(124,92,252,0.2)] transition-all group">
       <div class="relative h-32 overflow-hidden">
         <img src="${m.backdrop_url || m.poster_url}" alt="${m.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-        <div class="absolute inset-0 bg-gradient-to-t from-[#1a1714] to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f22] to-transparent"></div>
         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div class="w-10 h-10 rounded-full bg-[#e8b84b] flex items-center justify-center shadow-lg">
-            <svg class="w-4 h-4 text-[#0a0908] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <div class="w-10 h-10 rounded-full bg-[#7c5cfc] flex items-center justify-center shadow-lg">
+            <svg class="w-4 h-4 text-[#06060f] ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </div>
         </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-[#2e2920]">
-          <div class="h-full bg-[#e8b84b] rounded-r" style="width:${Math.min(90, 20 + i * 12)}%"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-[#1c1c38]">
+          <div class="h-full bg-[#7c5cfc] rounded-r" style="width:${Math.min(90, 20 + i * 12)}%"></div>
         </div>
       </div>
       <div class="p-3">
         <h4 class="text-xs font-semibold text-white truncate">${m.title}</h4>
-        <p class="text-[10px] text-[#7a6e60]">${m.genre} • ${m.year}</p>
+        <p class="text-[10px] text-[#6b6b9a]">${m.genre} • ${m.year}</p>
       </div>
     </a>
   `).join('');
@@ -426,7 +426,7 @@ async function initBrowsePage() {
       <div class="col-span-full text-center py-16">
         <div class="text-5xl mb-3">🎬</div>
         <h3 class="text-base font-semibold text-white mb-1">No movies found</h3>
-        <p class="text-xs text-[#7a6e60] mb-4">Try different keywords or filters</p>
+        <p class="text-xs text-[#6b6b9a] mb-4">Try different keywords or filters</p>
         <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Clear Filters</a>
       </div>`;
   } else {
@@ -464,11 +464,11 @@ async function initFavoritesPage() {
   if (!favIds.length) {
     grid.innerHTML = `
       <div class="col-span-full text-center py-16">
-        <div class="w-16 h-16 rounded-2xl bg-[rgba(232,184,75,0.1)] flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-[#e8b84b]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-[#7c5cfc]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
         <h3 class="text-base font-semibold text-white mb-1">No favorites yet</h3>
-        <p class="text-xs text-[#7a6e60] mb-4">Click the ❤️ on any movie to save it here</p>
+        <p class="text-xs text-[#6b6b9a] mb-4">Click the ❤️ on any movie to save it here</p>
         <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
       </div>`;
     return;
@@ -479,7 +479,7 @@ async function initFavoritesPage() {
   const favMovies = allMovies.filter(m => favIds.includes(Number(m.id)));
 
   if (!favMovies.length) {
-    grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#7a6e60] text-sm">Your favorites will appear here.</div>`;
+    grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#6b6b9a] text-sm">Your favorites will appear here.</div>`;
     return;
   }
 
@@ -498,11 +498,11 @@ async function initCollectionsPage() {
   if (!colIds.length) {
     grid.innerHTML = `
       <div class="col-span-full text-center py-16">
-        <div class="w-16 h-16 rounded-2xl bg-[rgba(232,184,75,0.1)] flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-[#e8b84b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-[#7c5cfc]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </div>
         <h3 class="text-base font-semibold text-white mb-1">No bookmarks yet</h3>
-        <p class="text-xs text-[#7a6e60] mb-4">Bookmark movies to watch later</p>
+        <p class="text-xs text-[#6b6b9a] mb-4">Bookmark movies to watch later</p>
         <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
       </div>`;
     return;

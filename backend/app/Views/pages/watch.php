@@ -11,7 +11,7 @@
             <div class="bg-gradient-to-b from-black/90 to-transparent px-4 sm:px-8 py-5">
                 <div class="flex items-center justify-between max-w-7xl mx-auto">
                     <a href="/movie/<?= esc($movie['slug']) ?>"
-                        class="flex items-center gap-3 text-white hover:text-[#e8b84b] transition-colors">
+                        class="flex items-center gap-3 text-white hover:text-[#7c5cfc] transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <polyline points="15 18 9 12 15 6" />
                         </svg>
@@ -24,7 +24,7 @@
                     </a>
                     <div class="flex items-center gap-2">
                         <span
-                            class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-[rgba(232,184,75,0.15)] text-[#e8b84b] border border-[rgba(232,184,75,0.25)]">
+                            class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-[rgba(124,92,252,0.15)] text-[#7c5cfc] border border-[rgba(124,92,252,0.25)]">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                 <polygon
                                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -44,7 +44,7 @@
         <div id="yt-embed-wrapper" class="w-full h-full flex items-center justify-center bg-black">
             <div class="text-center">
                 <div
-                    class="w-12 h-12 border-4 border-[#2e2920] border-t-[#e8b84b] rounded-full animate-spin mx-auto mb-3">
+                    class="w-12 h-12 border-4 border-[#1c1c38] border-t-[#7c5cfc] rounded-full animate-spin mx-auto mb-3">
                 </div>
                 <p class="text-sm text-gray-500">Loading player...</p>
             </div>
