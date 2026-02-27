@@ -1,6 +1,6 @@
 /* ============================
-   NOX Movie � Main JavaScript
-   Night Cinema � Electric Violet
+   NOX Movie � Main JavaScript
+   Night Cinema � Electric Violet
    ============================ */
 
 const API_BASE = '/api';
@@ -169,6 +169,26 @@ document.addEventListener('click', (e) => {
 });
 
 // ─── Movie Card ─────────────────────────────────────────
+// Handle broken poster images with a styled fallback
+function handleBrokenPoster(img, movie) {
+  img.onerror = null;
+  img.style.display = 'none';
+  const fallbackExists = img.parentElement.querySelector('.poster-fallback');
+  if (fallbackExists) return;
+  const f = document.createElement('div');
+  f.className = 'poster-fallback w-full h-full flex flex-col items-center justify-center gap-2 bg-[#0f0f22] p-3 absolute inset-0';
+  const title = movie ? movie.title : '';
+  const genre = movie ? movie.genre : '';
+  f.innerHTML = `
+    <svg class="w-10 h-10 opacity-30" fill="#7c5cfc" viewBox="0 0 24 24">
+      <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/>
+    </svg>
+    <span style="font-size:10px;color:#6b6b9a;text-align:center;line-height:1.3;font-weight:500;max-width:90%;word-break:break-word;">${title}</span>
+  `;
+  img.parentElement.style.position = 'relative';
+  img.parentElement.appendChild(f);
+}
+
 function createMovieCard(movie, index = 0) {
   const favClass = isFavorite(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
   const bookClass = isBookmarked(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
@@ -177,7 +197,7 @@ function createMovieCard(movie, index = 0) {
     <a href="/movie/${movie.slug}" class="movie-card group block rounded-2xl overflow-hidden relative" style="animation-delay:${index * 60}ms">
       <div class="relative aspect-[2/3] overflow-hidden bg-[#0f0f22] rounded-2xl">
         <img src="${movie.poster_url}" alt="${movie.title}" class="w-full h-full object-cover" loading="lazy"
-          onerror="this.onerror=null;this.src='https://placehold.co/300x450/0f0f22/7c5cfc?text=${encodeURIComponent(movie.title.substring(0, 20))}'" />
+          onerror="handleBrokenPoster(this, movie)" />
         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
         <div class="card-overlay absolute inset-0 bg-[rgba(124,92,252,0.05)] flex items-center justify-center">
           <div class="w-12 h-12 rounded-full bg-[#7c5cfc] flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
