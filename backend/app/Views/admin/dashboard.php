@@ -11,10 +11,18 @@
                 <h1 class="text-2xl font-bold font-display text-white">Admin Dashboard</h1>
                 <p class="text-sm text-gray-600">Manage movies and users</p>
             </div>
-            <a href="/admin/movies/create"
-                class="btn-lime px-5 py-2.5 rounded-xl text-sm font-bold inline-flex items-center gap-2 w-fit">
-                <i data-lucide="plus" class="w-4 h-4"></i> Add Movie
-            </a>
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Sync Images Button — Re-fetches backdrop/poster from TMDB into DB -->
+                <button id="sync-btn" onclick="syncImages()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[#15152d] border border-white/10 text-[#a78bfa] hover:bg-[rgba(124,92,252,0.1)] hover:border-[rgba(124,92,252,0.3)] transition-all">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span id="sync-label">Sync Backdrops</span>
+                </button>
+                <a href="/admin/movies/create"
+                    class="btn-lime px-5 py-2.5 rounded-xl text-sm font-bold inline-flex items-center gap-2 w-fit">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Movie
+                </a>
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -200,4 +208,49 @@
 
     </div>
 </div>
+
+<script>
+    /**
+     * syncImages()
+     * Called by the "Sync Backdrops" button in the admin dashboard.
+     * POSTs to /admin/sync-images which calls AdminController::syncImages()
+     * That method calls TmdbService for each movie and updates backdrop_url + poster_url in DB.
+     *
+     * Requires TMDB_API_TOKEN to be set in .env — will show an error if not.
+     */
+    async function syncImages() {
+        const btn = document.getElementById('sync-btn');
+        const label = document.getElementById('sync-label');
+
+        btn.disabled = true;
+        label.textContent = '⏳ Syncing... (may take 1-2 min)';
+        btn.classList.add('opacity-60', 'cursor-not-allowed');
+
+        try {
+            const res = await fetch('/admin/sync-images', { method: 'POST' });
+            const json = await res.json();
+
+            if (res.ok && json.status === 'success') {
+                label.textContent = `✅ Done: ${json.updated} updated, ${json.skipped} skipped, ${json.failed} failed`;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+                btn.classList.add('border-green-500/30', 'text-green-400');
+            } else {
+                label.textContent = `❌ ${json.message || 'Sync failed'}`;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+                btn.classList.add('border-red-500/30', 'text-red-400');
+            }
+        } catch (e) {
+            label.textContent = '❌ Network error';
+            btn.classList.remove('opacity-60', 'cursor-not-allowed');
+        } finally {
+            btn.disabled = false;
+            // Reset label after 8 seconds
+            setTimeout(() => {
+                label.textContent = 'Sync Backdrops';
+                btn.classList.remove('border-green-500/30', 'text-green-400', 'border-red-500/30', 'text-red-400');
+            }, 8000);
+        }
+    }
+</script>
+
 <?= $this->endSection() ?>

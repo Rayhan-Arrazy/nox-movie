@@ -10,9 +10,19 @@ $durationStr = $hrs > 0 ? "{$hrs}h {$mins}m" : "{$mins}m";
 ?>
 
 <!-- Backdrop -->
-<div class="relative h-[55vh] overflow-hidden">
-    <img src="<?= esc($movie['backdrop_url']) ?>" alt="<?= esc($movie['title']) ?>"
-        class="w-full h-full object-cover" />
+<div class="relative h-[55vh] overflow-hidden bg-[#06060f]">
+    <img src="<?= esc($movie['backdrop_url']) ?>" alt="<?= esc($movie['title']) ?>" class="w-full h-full object-cover"
+        style="object-fit:cover;object-position:center top;width:100%;height:100%;display:block;"
+        onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.backdrop-fallback').style.display='flex';" />
+    <!-- Fallback shown when backdrop URL is broken/404 -->
+    <div class="backdrop-fallback absolute inset-0 hidden items-center justify-center flex-col gap-3"
+        style="background:linear-gradient(135deg,#06060f 0%,#0f0f22 50%,#15152d 100%);display:none;">
+        <svg class="w-16 h-16 opacity-20" fill="#7c5cfc" viewBox="0 0 24 24">
+            <path
+                d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+        </svg>
+        <span style="font-size:13px;color:#6b6b9a;font-weight:500;"><?= esc($movie['title']) ?></span>
+    </div>
     <div class="hero-gradient absolute inset-0"></div>
     <div class="hero-side-gradient absolute inset-0"></div>
 

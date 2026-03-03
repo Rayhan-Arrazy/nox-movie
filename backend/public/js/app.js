@@ -3,7 +3,7 @@
    Night Cinema � Electric Violet
    ============================ */
 
-const API_BASE = '/api';
+const API_BASE = "/api";
 
 // ─── API Helper ─────────────────────────────────────────
 async function apiFetch(endpoint) {
@@ -12,7 +12,7 @@ async function apiFetch(endpoint) {
     const json = await res.json();
     return json.data || [];
   } catch (err) {
-    console.error('API Error:', err);
+    console.error("API Error:", err);
     return [];
   }
 }
@@ -25,173 +25,229 @@ function formatDuration(minutes) {
 }
 
 function slugify(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
-// ─── LocalStorage Keys ────────────────────────────────────
-const LS_FAVORITES = 'cv_favorites';
-const LS_COLLECTIONS = 'cv_collections';
-const LS_WATCH_HIST = 'cv_watch_history';
-const LS_SETTINGS = 'cv_settings';
-
-function lsGet(key) {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function lsSet(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
-}
+// ─── Settings (localStorage only — UI preferences, no auth needed) ──
+const LS_SETTINGS = "cv_settings";
 function lsGetObj(key, def = {}) {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); } catch { return def; }
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); }
+  catch { return def; }
+}
+function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+// ─── User State (DB-backed) ────────────────────────────────
+// Holds IDs loaded from the server on page load via /api/user/state
+let _favoriteIds = [];   // array of movie IDs
+let _watchlistIds = [];   // array of movie IDs
+let _historyData = [];   // array of movie objects (with progress)
+let _userLoggedIn = false;
+
+/**
+ * initUserState()
+ * Called once on DOMContentLoaded for every page.
+ * Fetches /api/user/state to populate favorite/watchlist/history in memory.
+ * If the user is not logged in, the endpoint returns 401 and we skip silently.
+ */
+async function initUserState() {
+  try {
+    const res = await fetch('/api/user/state');
+    if (!res.ok) return; // 401 = not logged in — that's fine
+    const json = await res.json();
+    if (json.status === 'success') {
+      _favoriteIds = json.data.favorite_ids || [];
+      _watchlistIds = json.data.watchlist_ids || [];
+      _historyData = json.data.history || [];
+      _userLoggedIn = true;
+    }
+  } catch (e) {
+    // Offline or server error — degrade gracefully
+  }
 }
 
-// ─── Favorites ────────────────────────────────────────────
-function getFavorites() { return lsGet(LS_FAVORITES); }
-function isFavorite(movieId) { return getFavorites().includes(Number(movieId)); }
+// ─── Favorites (DB via /api/user/favorites) ────────────────
+function isFavorite(movieId) {
+  return _favoriteIds.includes(Number(movieId));
+}
 
-function toggleFavorite(movieId, btn) {
+async function toggleFavorite(movieId, btn) {
   movieId = Number(movieId);
-  let favs = getFavorites();
-  const wasFav = favs.includes(movieId);
-  if (wasFav) { favs = favs.filter(id => id !== movieId); }
-  else { favs.push(movieId); }
-  lsSet(LS_FAVORITES, favs);
-
-  if (btn) {
-    btn.classList.toggle('text-[#a78bfa]', !wasFav);
-    btn.classList.toggle('text-white/40', wasFav);
-    btn.title = wasFav ? 'Add to Favorites' : 'Remove from Favorites';
-    // animate
-    btn.style.transform = 'scale(1.4)';
-    setTimeout(() => btn.style.transform = '', 250);
+  if (!_userLoggedIn) {
+    showToast('Please login to use Favorites', 'error');
+    return false;
   }
 
+  // Optimistic UI update
+  const wasFav = isFavorite(movieId);
+  if (wasFav) {
+    _favoriteIds = _favoriteIds.filter(id => id !== movieId);
+  } else {
+    _favoriteIds.push(movieId);
+  }
+  _updateBtnState(btn, !wasFav, wasFav ? 'Add to Favorites' : 'Remove from Favorites');
   showToast(wasFav ? 'Removed from Favorites' : '❤️ Added to Favorites');
+
+  // Persist to DB
+  try {
+    await fetch(`/api/user/favorites/${movieId}`, { method: 'POST' });
+  } catch (e) {
+    // Revert on failure
+    if (wasFav) _favoriteIds.push(movieId); else _favoriteIds = _favoriteIds.filter(id => id !== movieId);
+  }
   return !wasFav;
 }
 
-// ─── Collections (Bookmarks) ──────────────────────────────
-function getCollections() { return lsGet(LS_COLLECTIONS); }
-function isBookmarked(movieId) { return getCollections().includes(Number(movieId)); }
+// ─── Watchlist / Collections (DB via /api/user/watchlist) ──
+function isBookmarked(movieId) {
+  return _watchlistIds.includes(Number(movieId));
+}
 
-function toggleCollection(movieId, btn) {
+async function toggleCollection(movieId, btn) {
   movieId = Number(movieId);
-  let cols = getCollections();
-  const wasIn = cols.includes(movieId);
-  if (wasIn) { cols = cols.filter(id => id !== movieId); }
-  else { cols.push(movieId); }
-  lsSet(LS_COLLECTIONS, cols);
-
-  if (btn) {
-    btn.classList.toggle('text-[#a78bfa]', !wasIn);
-    btn.classList.toggle('text-white/40', wasIn);
-    btn.title = wasIn ? 'Bookmark' : 'Remove Bookmark';
-    btn.style.transform = 'scale(1.4)';
-    setTimeout(() => btn.style.transform = '', 250);
+  if (!_userLoggedIn) {
+    showToast('Please login to use Watchlist', 'error');
+    return false;
   }
 
-  showToast(wasIn ? 'Removed from Collections' : '🔖 Added to Collections');
+  const wasIn = isBookmarked(movieId);
+  if (wasIn) {
+    _watchlistIds = _watchlistIds.filter(id => id !== movieId);
+  } else {
+    _watchlistIds.push(movieId);
+  }
+  _updateBtnState(btn, !wasIn, wasIn ? 'Bookmark' : 'Remove Bookmark');
+  showToast(wasIn ? 'Removed from Watchlist' : '🔖 Added to Watchlist');
+
+  try {
+    await fetch(`/api/user/watchlist/${movieId}`, { method: 'POST' });
+  } catch (e) {
+    if (wasIn) _watchlistIds.push(movieId); else _watchlistIds = _watchlistIds.filter(id => id !== movieId);
+  }
   return !wasIn;
 }
 
-// ─── Watch History ────────────────────────────────────────
-function recordWatch(movie) {
-  let hist = lsGet(LS_WATCH_HIST);
-  hist = hist.filter(h => h.id !== movie.id);  // remove old entry
-  hist.unshift({ ...movie, watchedAt: Date.now(), progress: 0 });
-  if (hist.length > 20) hist = hist.slice(0, 20);
-  lsSet(LS_WATCH_HIST, hist);
+// ─── Watch History (DB via /api/user/history) ──────────────
+function getWatchHistory() {
+  return _historyData;
 }
 
-function getWatchHistory() { return lsGet(LS_WATCH_HIST); }
+async function recordWatch(movie) {
+  // Update local memory cache immediately
+  _historyData = _historyData.filter(h => h.id !== movie.id);
+  _historyData.unshift({ ...movie, watched_at: new Date().toISOString(), progress_seconds: 0 });
+  if (_historyData.length > 20) _historyData = _historyData.slice(0, 20);
+
+  // Persist to DB (fire and forget)
+  if (_userLoggedIn && movie.id) {
+    fetch(`/api/user/history/${movie.id}`, { method: 'POST' }).catch(() => { });
+  }
+}
+
+// ─── Button state helper ───────────────────────────────────
+function _updateBtnState(btn, isActive, title) {
+  if (!btn) return;
+  btn.classList.toggle('text-[#a78bfa]', isActive);
+  btn.classList.toggle('text-white/40', !isActive);
+  btn.title = title;
+  btn.style.transform = 'scale(1.4)';
+  setTimeout(() => (btn.style.transform = ''), 250);
+}
 
 // ─── Toast ────────────────────────────────────────────────
-function showToast(msg, type = 'success') {
-  const existing = document.getElementById('dynamic-toast');
+function showToast(msg, type = "success") {
+  const existing = document.getElementById("dynamic-toast");
   if (existing) existing.remove();
 
-  const div = document.createElement('div');
-  div.id = 'dynamic-toast';
-  div.className = `fixed top-20 right-4 lg:right-8 z-[100] animate-fade-in-up bg-[#0f0f22] border rounded-xl px-5 py-3 shadow-2xl max-w-xs ${type === 'error' ? 'border-red-500/30 toast-error' : 'border-[rgba(124,92,252,0.3)] toast-success'}`;
+  const div = document.createElement("div");
+  div.id = "dynamic-toast";
+  div.className = `fixed top-20 right-4 lg:right-8 z-[100] animate-fade-in-up bg-[#0f0f22] border rounded-xl px-5 py-3 shadow-2xl max-w-xs ${type === "error" ? "border-red-500/30 toast-error" : "border-[rgba(124,92,252,0.3)] toast-success"}`;
   div.innerHTML = `<p class="text-sm text-white font-medium">${msg}</p>`;
   document.body.appendChild(div);
   setTimeout(() => div.remove(), 3000);
 }
 
 // ─── Navbar ─────────────────────────────────────────────
-window.addEventListener('scroll', () => {
-  const nav = document.getElementById('main-navbar');
+window.addEventListener("scroll", () => {
+  const nav = document.getElementById("main-navbar");
   if (!nav) return;
-  nav.classList.toggle('navbar-scrolled', window.scrollY > 40);
+  nav.classList.toggle("navbar-scrolled", window.scrollY > 40);
 });
 
 function handleNavSearch(e) {
   e.preventDefault();
-  const q = (document.getElementById('nav-search-input') || document.getElementById('mobile-search-input'))?.value.trim();
+  const q = (
+    document.getElementById("nav-search-input") ||
+    document.getElementById("mobile-search-input")
+  )?.value.trim();
   if (q) window.location.href = `/browse?search=${encodeURIComponent(q)}`;
 }
 
 function toggleMobileMenu() {
-  document.getElementById('mobile-menu')?.classList.toggle('hidden');
+  document.getElementById("mobile-menu")?.classList.toggle("hidden");
 }
 
 function toggleProfileMenu() {
-  document.getElementById('profile-dropdown')?.classList.toggle('hidden');
-  document.getElementById('notif-panel')?.classList.add('hidden');
+  document.getElementById("profile-dropdown")?.classList.toggle("hidden");
+  document.getElementById("notif-panel")?.classList.add("hidden");
 }
 
 // ─── Notifications ────────────────────────────────────────
 function toggleNotifications() {
-  const panel = document.getElementById('notif-panel');
-  const profileDrop = document.getElementById('profile-dropdown');
+  const panel = document.getElementById("notif-panel");
+  const profileDrop = document.getElementById("profile-dropdown");
   if (!panel) return;
-  profileDrop?.classList.add('hidden');
-  panel.classList.toggle('hidden');
+  profileDrop?.classList.add("hidden");
+  panel.classList.toggle("hidden");
 }
 
 function markAllRead() {
-  document.querySelectorAll('.notif-unread').forEach(el => {
-    el.classList.remove('notif-unread', 'bg-[rgba(124,92,252,0.05)]');
+  document.querySelectorAll(".notif-unread").forEach((el) => {
+    el.classList.remove("notif-unread", "bg-[rgba(124,92,252,0.05)]");
   });
-  const dot = document.getElementById('notif-dot');
-  if (dot) dot.classList.add('hidden');
-  showToast('All notifications marked as read');
+  const dot = document.getElementById("notif-dot");
+  if (dot) dot.classList.add("hidden");
+  showToast("All notifications marked as read");
 }
 
 // Close dropdowns on outside click
-document.addEventListener('click', (e) => {
-  const pw = document.getElementById('profile-dropdown-wrapper');
-  const pd = document.getElementById('profile-dropdown');
-  const nw = document.getElementById('notif-wrapper');
-  const np = document.getElementById('notif-panel');
+document.addEventListener("click", (e) => {
+  const pw = document.getElementById("profile-dropdown-wrapper");
+  const pd = document.getElementById("profile-dropdown");
+  const nw = document.getElementById("notif-wrapper");
+  const np = document.getElementById("notif-panel");
 
-  if (pw && pd && !pw.contains(e.target)) pd.classList.add('hidden');
-  if (nw && np && !nw.contains(e.target)) np.classList.add('hidden');
+  if (pw && pd && !pw.contains(e.target)) pd.classList.add("hidden");
+  if (nw && np && !nw.contains(e.target)) np.classList.add("hidden");
 });
 
 // ─── Movie Card ─────────────────────────────────────────
 // Handle broken poster images with a styled fallback
 function handleBrokenPoster(img, movie) {
   img.onerror = null;
-  img.style.display = 'none';
-  const fallbackExists = img.parentElement.querySelector('.poster-fallback');
+  img.style.display = "none";
+  const fallbackExists = img.parentElement.querySelector(".poster-fallback");
   if (fallbackExists) return;
-  const f = document.createElement('div');
-  f.className = 'poster-fallback w-full h-full flex flex-col items-center justify-center gap-2 bg-[#0f0f22] p-3 absolute inset-0';
-  const title = movie ? movie.title : '';
-  const genre = movie ? movie.genre : '';
+  const f = document.createElement("div");
+  f.className =
+    "poster-fallback w-full h-full flex flex-col items-center justify-center gap-2 bg-[#0f0f22] p-3 absolute inset-0";
+  const title = movie ? movie.title : "";
+  const genre = movie ? movie.genre : "";
   f.innerHTML = `
     <svg class="w-10 h-10 opacity-30" fill="#7c5cfc" viewBox="0 0 24 24">
       <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/>
     </svg>
     <span style="font-size:10px;color:#6b6b9a;text-align:center;line-height:1.3;font-weight:500;max-width:90%;word-break:break-word;">${title}</span>
   `;
-  img.parentElement.style.position = 'relative';
+  img.parentElement.style.position = "relative";
   img.parentElement.appendChild(f);
 }
 
 function createMovieCard(movie, index = 0) {
-  const favClass = isFavorite(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
-  const bookClass = isBookmarked(movie.id) ? 'text-[#a78bfa]' : 'text-white/40';
+  const favClass = isFavorite(movie.id) ? "text-[#a78bfa]" : "text-white/40";
+  const bookClass = isBookmarked(movie.id) ? "text-[#a78bfa]" : "text-white/40";
 
   return `
     <a href="/movie/${movie.slug}" class="movie-card group block rounded-2xl overflow-hidden relative" style="animation-delay:${index * 60}ms">
@@ -207,7 +263,7 @@ function createMovieCard(movie, index = 0) {
         <!-- Favorite Heart -->
         <button onclick="event.preventDefault();event.stopPropagation();toggleFavorite(${movie.id},this)"
           class="absolute top-2.5 right-2.5 ${favClass} hover:text-[#a78bfa] transition-all z-10"
-          title="${isFavorite(movie.id) ? 'Remove from Favorites' : 'Add to Favorites'}"
+          title="${isFavorite(movie.id) ? "Remove from Favorites" : "Add to Favorites"}"
           style="transition: transform 0.25s ease">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
@@ -237,16 +293,21 @@ function createMovieCard(movie, index = 0) {
 
 // ─── Movie Row ──────────────────────────────────────────
 function createMovieRow(title, subtitle, movies, id) {
-  if (!movies || movies.length === 0) return '';
+  if (!movies || movies.length === 0) return "";
   const sectionId = id || slugify(title);
-  const cards = movies.map((m, i) => `<div class="flex-shrink-0 w-[150px] sm:w-[170px] lg:w-[190px]">${createMovieCard(m, i)}</div>`).join('');
+  const cards = movies
+    .map(
+      (m, i) =>
+        `<div class="flex-shrink-0 w-[150px] sm:w-[170px] lg:w-[190px]">${createMovieCard(m, i)}</div>`,
+    )
+    .join("");
 
   return `
     <section class="relative py-4" id="section-${sectionId}">
       <div class="flex items-end justify-between mb-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div>
           <h2 class="text-base sm:text-lg font-bold text-white font-display">${title}</h2>
-          ${subtitle ? `<p class="text-[11px] text-[#6b6b9a] mt-0.5">${subtitle}</p>` : ''}
+          ${subtitle ? `<p class="text-[11px] text-[#6b6b9a] mt-0.5">${subtitle}</p>` : ""}
         </div>
         <div class="flex gap-1.5">
           <button onclick="scrollRow('${sectionId}','left')" class="p-1.5 rounded-lg bg-[#15152d] text-[#6b6b9a] hover:text-[#a78bfa] hover:bg-[rgba(124,92,252,0.1)] transition-all border border-white/5">
@@ -266,11 +327,14 @@ function createMovieRow(title, subtitle, movies, id) {
 
 function scrollRow(id, dir) {
   const el = document.getElementById(`scroll-${id}`);
-  if (el) el.scrollBy({ left: dir === 'left' ? -280 : 280, behavior: 'smooth' });
+  if (el)
+    el.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" });
 }
 
 // ─── Hero Carousel ──────────────────────────────────────
-let heroMovies = [], heroIndex = 0, heroInterval = null;
+let heroMovies = [],
+  heroIndex = 0,
+  heroInterval = null;
 
 function initHero(movies) {
   heroMovies = movies;
@@ -281,12 +345,15 @@ function initHero(movies) {
 
 function renderHero() {
   const m = heroMovies[heroIndex];
-  const container = document.getElementById('hero-section');
+  const container = document.getElementById("hero-section");
   if (!container || !m) return;
 
-  const dots = heroMovies.map((_, i) =>
-    `<button onclick="heroGoTo(${i})" class="transition-all duration-300 rounded-full ${i === heroIndex ? 'w-6 h-1.5 bg-[#7c5cfc]' : 'w-1.5 h-1.5 bg-white/20 hover:bg-white/40'}"></button>`
-  ).join('');
+  const dots = heroMovies
+    .map(
+      (_, i) =>
+        `<button onclick="heroGoTo(${i})" class="transition-all duration-300 rounded-full ${i === heroIndex ? "w-6 h-1.5 bg-[#7c5cfc]" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"}"></button>`,
+    )
+    .join("");
 
   const favBtn = isFavorite(m.id)
     ? `<button id="hero-fav-btn" onclick="toggleFavorite(${m.id},this)" class="w-11 h-11 rounded-xl bg-[rgba(124,92,252,0.15)] backdrop-blur-sm flex items-center justify-center text-[#7c5cfc] border border-[rgba(124,92,252,0.3)] transition-all" title="Remove from Favorites"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>`
@@ -294,7 +361,16 @@ function renderHero() {
 
   container.innerHTML = `
     <div class="absolute inset-0">
-      <img src="${m.backdrop_url}" alt="${m.title}" class="w-full h-full object-cover" />
+      <img src="${m.backdrop_url}" alt="${m.title}"
+           class="w-full h-full object-cover"
+           style="object-fit:cover;object-position:center top;width:100%;height:100%;display:block;"
+           onerror="this.onerror=null;this.style.display='none';document.getElementById('hero-fallback-bg').style.display='flex';" />
+      <!-- Fallback background when backdrop URL is broken or unavailable -->
+      <div id="hero-fallback-bg" class="absolute inset-0 items-center justify-center" style="display:none;background:linear-gradient(135deg,#06060f 0%,#0f0f22 40%,#15152d 100%);">
+        <svg class="w-24 h-24 opacity-10" fill="#7c5cfc" viewBox="0 0 24 24">
+          <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/>
+        </svg>
+      </div>
       <div class="hero-gradient absolute inset-0"></div>
       <div class="hero-side-gradient absolute inset-0"></div>
     </div>
@@ -339,28 +415,46 @@ function renderHero() {
   `;
 }
 
-function heroNext() { heroIndex = (heroIndex + 1) % heroMovies.length; renderHero(); resetHeroInterval(); }
-function heroPrev() { heroIndex = (heroIndex - 1 + heroMovies.length) % heroMovies.length; renderHero(); resetHeroInterval(); }
-function heroGoTo(i) { heroIndex = i; renderHero(); resetHeroInterval(); }
-function resetHeroInterval() { clearInterval(heroInterval); heroInterval = setInterval(heroNext, 8000); }
+function heroNext() {
+  heroIndex = (heroIndex + 1) % heroMovies.length;
+  renderHero();
+  resetHeroInterval();
+}
+function heroPrev() {
+  heroIndex = (heroIndex - 1 + heroMovies.length) % heroMovies.length;
+  renderHero();
+  resetHeroInterval();
+}
+function heroGoTo(i) {
+  heroIndex = i;
+  renderHero();
+  resetHeroInterval();
+}
+function resetHeroInterval() {
+  clearInterval(heroInterval);
+  heroInterval = setInterval(heroNext, 8000);
+}
 
 // ─── Continue Watching (from localStorage) ───────────────
 function loadContinueWatching() {
-  const cw = document.getElementById('continue-watching');
+  const cw = document.getElementById("continue-watching");
   if (!cw) return;
   const hist = getWatchHistory();
-  const section = document.getElementById('continue-watching-section');
+  const section = document.getElementById("continue-watching-section");
 
   if (!hist.length) {
-    if (section) section.style.display = 'none';
+    if (section) section.style.display = "none";
     return;
   }
 
-  if (section) section.style.display = '';
-  cw.innerHTML = hist.slice(0, 8).map((m, i) => `
+  if (section) section.style.display = "";
+  cw.innerHTML = hist
+    .slice(0, 8)
+    .map(
+      (m, i) => `
     <a href="/watch/${m.slug}" class="flex-shrink-0 w-[260px] bg-[#0f0f22] rounded-xl overflow-hidden border border-white/5 hover:border-[rgba(124,92,252,0.2)] transition-all group">
       <div class="relative h-32 overflow-hidden">
-        <img src="${m.backdrop_url || m.poster_url}" alt="${m.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+        <img src="${m.backdrop_url || m.poster_url}" alt="${m.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" style="object-fit:cover;object-position:center top;width:100%;height:100%;display:block;" loading="lazy" />
         <div class="absolute inset-0 bg-gradient-to-t from-[#0f0f22] to-transparent"></div>
         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <div class="w-10 h-10 rounded-full bg-[#7c5cfc] flex items-center justify-center shadow-lg">
@@ -376,15 +470,17 @@ function loadContinueWatching() {
         <p class="text-[10px] text-[#6b6b9a]">${m.genre} • ${m.year}</p>
       </div>
     </a>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 // ─── Video Player (YouTube Embed) ────────────────────────
-const YOUTUBE_VIDEO_ID = 'NvT7aGbAP14';
+const YOUTUBE_VIDEO_ID = "NvT7aGbAP14";
 
 function initVideoPlayer() {
   // If there's a native video element, replace it with YouTube
-  const container = document.getElementById('video-container');
+  const container = document.getElementById("video-container");
   if (!container) return;
 
   // Record to watch history
@@ -406,40 +502,42 @@ function initVideoPlayer() {
   `;
 
   // Top bar controls (back button / title)
-  const topBar = document.getElementById('top-bar');
-  if (topBar) topBar.style.zIndex = '40';
+  const topBar = document.getElementById("top-bar");
+  if (topBar) topBar.style.zIndex = "40";
 
   // Keyboard shortcut: F for fullscreen
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') window.history.back();
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") window.history.back();
   });
 }
 
 // ─── Browse Page ────────────────────────────────────────
 async function initBrowsePage() {
-  const grid = document.getElementById('movie-grid');
-  const countEl = document.getElementById('results-count');
+  const grid = document.getElementById("movie-grid");
+  const countEl = document.getElementById("results-count");
   if (!grid) return;
 
   const params = new URLSearchParams(window.location.search);
-  const search = params.get('search') || '';
-  const genre = params.get('genre') || 'All';
+  const search = params.get("search") || "";
+  const genre = params.get("genre") || "All";
 
   // Mark active genre button
-  document.querySelectorAll('.genre-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.genre === genre);
+  document.querySelectorAll(".genre-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.genre === genre);
   });
 
-  const searchInput = document.getElementById('browse-search');
+  const searchInput = document.getElementById("browse-search");
   if (searchInput && search) searchInput.value = search;
 
-  let endpoint = '/movies';
+  let endpoint = "/movies";
   if (search) endpoint += `?search=${encodeURIComponent(search)}`;
-  else if (genre && genre !== 'All') endpoint += `?genre=${encodeURIComponent(genre)}`;
+  else if (genre && genre !== "All")
+    endpoint += `?genre=${encodeURIComponent(genre)}`;
 
   const movies = await apiFetch(endpoint);
 
-  if (countEl) countEl.textContent = `${movies.length} movie${movies.length !== 1 ? 's' : ''} found`;
+  if (countEl)
+    countEl.textContent = `${movies.length} movie${movies.length !== 1 ? "s" : ""} found`;
 
   if (movies.length === 0) {
     grid.innerHTML = `
@@ -450,161 +548,204 @@ async function initBrowsePage() {
         <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Clear Filters</a>
       </div>`;
   } else {
-    grid.innerHTML = movies.map((m, i) => `
+    grid.innerHTML = movies
+      .map(
+        (m, i) => `
       <div class="animate-fade-in-up" style="animation-delay:${i * 40}ms">${createMovieCard(m, i)}</div>
-    `).join('');
+    `,
+      )
+      .join("");
   }
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 function handleBrowseSearch(e) {
   e.preventDefault();
-  const q = document.getElementById('browse-search')?.value.trim();
-  window.location.href = q ? `/browse?search=${encodeURIComponent(q)}` : '/browse';
+  const q = document.getElementById("browse-search")?.value.trim();
+  window.location.href = q
+    ? `/browse?search=${encodeURIComponent(q)}`
+    : "/browse";
 }
 
 function filterGenre(genre) {
-  window.location.href = genre === 'All' ? '/browse' : `/browse?genre=${encodeURIComponent(genre)}`;
+  window.location.href =
+    genre === "All" ? "/browse" : `/browse?genre=${encodeURIComponent(genre)}`;
 }
 
 function setGridSize(size) {
-  const grid = document.getElementById('movie-grid');
+  const grid = document.getElementById("movie-grid");
   if (!grid) return;
-  grid.className = size === 'large'
-    ? 'grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
-    : 'grid gap-4 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6';
+  grid.className =
+    size === "large"
+      ? "grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+      : "grid gap-4 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
 }
 
-// ─── Favorites Page ──────────────────────────────────────
+// ─── Favorites Page (DB-backed via /api/user/favorites) ──
 async function initFavoritesPage() {
-  const grid = document.getElementById('favorites-grid');
+  const grid = document.getElementById("favorites-grid");
   if (!grid) return;
 
-  const favIds = getFavorites();
-  if (!favIds.length) {
-    grid.innerHTML = `
-      <div class="col-span-full text-center py-16">
-        <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-[#7c5cfc]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-        <h3 class="text-base font-semibold text-white mb-1">No favorites yet</h3>
-        <p class="text-xs text-[#6b6b9a] mb-4">Click the ❤️ on any movie to save it here</p>
-        <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
-      </div>`;
-    return;
+  grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#6b6b9a] text-sm"><span class="animate-pulse">Loading favorites...</span></div>`;
+
+  try {
+    const res = await fetch('/api/user/favorites');
+    if (res.status === 401) {
+      grid.innerHTML = `<div class="col-span-full text-center py-16"><p class="text-[#6b6b9a] text-sm mb-4">Please <a href="/login" class="text-[#a78bfa] underline">login</a> to view your favorites.</p></div>`;
+      return;
+    }
+    const json = await res.json();
+    const favMovies = json.data || [];
+    if (!favMovies.length) {
+      grid.innerHTML = `
+        <div class="col-span-full text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-[#7c5cfc]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-1">No favorites yet</h3>
+          <p class="text-xs text-[#6b6b9a] mb-4">Click the ❤️ on any movie to save it here</p>
+          <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = favMovies.map((m, i) =>
+      `<div class="animate-fade-in-up" style="animation-delay:${i * 40}ms">${createMovieCard(m, i)}</div>`
+    ).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  } catch (e) {
+    grid.innerHTML = `<div class="col-span-full text-center py-10 text-red-400 text-sm">Failed to load favorites.</div>`;
   }
-
-  // Fetch all movies then filter by saved IDs
-  const allMovies = await apiFetch('/movies');
-  const favMovies = allMovies.filter(m => favIds.includes(Number(m.id)));
-
-  if (!favMovies.length) {
-    grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#6b6b9a] text-sm">Your favorites will appear here.</div>`;
-    return;
-  }
-
-  grid.innerHTML = favMovies.map((m, i) => `
-    <div class="animate-fade-in-up" style="animation-delay:${i * 40}ms">${createMovieCard(m, i)}</div>
-  `).join('');
-  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// ─── Collections Page ────────────────────────────────────
+// ─── Collections Page (DB-backed via /api/user/watchlist) ─
 async function initCollectionsPage() {
-  const grid = document.getElementById('collections-grid');
+  const grid = document.getElementById("collections-grid");
   if (!grid) return;
 
-  const colIds = getCollections();
-  if (!colIds.length) {
-    grid.innerHTML = `
-      <div class="col-span-full text-center py-16">
-        <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-[#7c5cfc]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <h3 class="text-base font-semibold text-white mb-1">No bookmarks yet</h3>
-        <p class="text-xs text-[#6b6b9a] mb-4">Bookmark movies to watch later</p>
-        <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
-      </div>`;
-    return;
+  grid.innerHTML = `<div class="col-span-full text-center py-10 text-[#6b6b9a] text-sm"><span class="animate-pulse">Loading watchlist...</span></div>`;
+
+  try {
+    const res = await fetch('/api/user/watchlist');
+    if (res.status === 401) {
+      grid.innerHTML = `<div class="col-span-full text-center py-16"><p class="text-[#6b6b9a] text-sm mb-4">Please <a href="/login" class="text-[#a78bfa] underline">login</a> to view your watchlist.</p></div>`;
+      return;
+    }
+    const json = await res.json();
+    const colMovies = json.data || [];
+    if (!colMovies.length) {
+      grid.innerHTML = `
+        <div class="col-span-full text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-[rgba(124,92,252,0.1)] flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-[#7c5cfc]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-1">No bookmarks yet</h3>
+          <p class="text-xs text-[#6b6b9a] mb-4">Bookmark movies to watch later</p>
+          <a href="/browse" class="btn-lime px-5 py-2 rounded-xl text-xs font-bold inline-block">Browse Movies</a>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = colMovies.map((m, i) =>
+      `<div class="animate-fade-in-up" style="animation-delay:${i * 40}ms">${createMovieCard(m, i)}</div>`
+    ).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  } catch (e) {
+    grid.innerHTML = `<div class="col-span-full text-center py-10 text-red-400 text-sm">Failed to load watchlist.</div>`;
   }
-
-  const allMovies = await apiFetch('/movies');
-  const colMovies = allMovies.filter(m => colIds.includes(Number(m.id)));
-
-  grid.innerHTML = colMovies.map((m, i) => `
-    <div class="animate-fade-in-up" style="animation-delay:${i * 40}ms">${createMovieCard(m, i)}</div>
-  `).join('');
-  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
 
 // ─── Settings ────────────────────────────────────────────
 function initSettings() {
-  const settings = lsGetObj(LS_SETTINGS, { notifications: true, autoplay: true, subtitles: false });
+  const settings = lsGetObj(LS_SETTINGS, {
+    notifications: true,
+    autoplay: true,
+    subtitles: false,
+  });
 
   // Apply stored toggle states
   const toggleMap = {
-    'toggle-notifications': 'notifications',
-    'toggle-autoplay': 'autoplay',
-    'toggle-subtitles': 'subtitles',
+    "toggle-notifications": "notifications",
+    "toggle-autoplay": "autoplay",
+    "toggle-subtitles": "subtitles",
   };
   Object.entries(toggleMap).forEach(([elId, key]) => {
     const el = document.getElementById(elId);
     if (!el) return;
     el.checked = !!settings[key];
-    el.addEventListener('change', () => {
+    el.addEventListener("change", () => {
       settings[key] = el.checked;
       lsSet(LS_SETTINGS, settings);
-      showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} ${el.checked ? 'enabled' : 'disabled'}`);
+      showToast(
+        `${key.charAt(0).toUpperCase() + key.slice(1)} ${el.checked ? "enabled" : "disabled"}`,
+      );
     });
   });
 
-  // Clear history button
-  const clearBtn = document.getElementById('clear-history-btn');
+  // Clear history button — calls DELETE /api/user/history
+  const clearBtn = document.getElementById("clear-history-btn");
   if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Clear your entire watch history?')) {
-        lsSet(LS_WATCH_HIST, []);
-        showToast('Watch history cleared');
+    clearBtn.addEventListener("click", async () => {
+      if (confirm("Clear your entire watch history?")) {
+        await fetch('/api/user/history', { method: 'DELETE' });
+        _historyData = [];
+        showToast("Watch history cleared");
       }
     });
   }
 
-  // Clear favorites button
-  const clearFavBtn = document.getElementById('clear-favorites-btn');
+  // Clear favorites button — calls DELETE /api/user/favorites
+  const clearFavBtn = document.getElementById("clear-favorites-btn");
   if (clearFavBtn) {
-    clearFavBtn.addEventListener('click', () => {
-      if (confirm('Clear all favorites?')) {
-        lsSet(LS_FAVORITES, []);
-        showToast('Favorites cleared');
+    clearFavBtn.addEventListener("click", async () => {
+      if (confirm("Clear all favorites?")) {
+        await fetch('/api/user/favorites', { method: 'DELETE' });
+        _favoriteIds = [];
+        showToast("Favorites cleared");
       }
     });
   }
 
   // Change password form
-  const pwForm = document.getElementById('change-password-form');
+  const pwForm = document.getElementById("change-password-form");
   if (pwForm) {
-    pwForm.addEventListener('submit', async (e) => {
+    pwForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const currentPw = document.getElementById('current-password')?.value;
-      const newPw = document.getElementById('new-password')?.value;
-      const confirmPw = document.getElementById('confirm-password')?.value;
+      const currentPw = document.getElementById("current-password")?.value;
+      const newPw = document.getElementById("new-password")?.value;
+      const confirmPw = document.getElementById("confirm-password")?.value;
 
-      if (!currentPw || !newPw || !confirmPw) { showToast('Please fill all fields', 'error'); return; }
-      if (newPw !== confirmPw) { showToast('Passwords do not match', 'error'); return; }
-      if (newPw.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+      if (!currentPw || !newPw || !confirmPw) {
+        showToast("Please fill all fields", "error");
+        return;
+      }
+      if (newPw !== confirmPw) {
+        showToast("Passwords do not match", "error");
+        return;
+      }
+      if (newPw.length < 8) {
+        showToast("Password must be at least 8 characters", "error");
+        return;
+      }
 
       // POST to backend
       try {
-        const res = await fetch('/api/auth/change-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ current_password: currentPw, new_password: newPw }),
+        const res = await fetch("/api/auth/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            current_password: currentPw,
+            new_password: newPw,
+          }),
         });
         const json = await res.json();
-        if (res.ok) { showToast('✅ Password changed successfully'); pwForm.reset(); }
-        else { showToast(json.message || 'Failed to change password', 'error'); }
+        if (res.ok) {
+          showToast("✅ Password changed successfully");
+          pwForm.reset();
+        } else {
+          showToast(json.message || "Failed to change password", "error");
+        }
       } catch {
-        showToast('Could not connect to server', 'error');
+        showToast("Could not connect to server", "error");
       }
     });
   }
@@ -612,6 +753,15 @@ function initSettings() {
 
 // ─── Utility: format seconds ─────────────────────────────
 function fmtTime(t) {
-  if (isNaN(t)) return '0:00';
-  return `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, '0')}`;
+  if (isNaN(t)) return "0:00";
+  return `${Math.floor(t / 60)}:${Math.floor(t % 60)
+    .toString()
+    .padStart(2, "0")}`;
 }
+
+// ─── Bootstrap: run initUserState on every page ──────────
+// This loads favorites/watchlist/history from DB into memory
+// so all heart/bookmark buttons and pages show correct state.
+document.addEventListener("DOMContentLoaded", () => {
+  initUserState();
+});

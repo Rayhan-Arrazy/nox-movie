@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\MovieModel;
 use App\Models\UserModel;
+use App\Services\TmdbService;
 
 class AdminController extends BaseController
 {
@@ -179,5 +180,74 @@ class AdminController extends BaseController
         }
         $this->userModel->delete($id);
         return redirect()->to('/admin/users')->with('success', 'User deleted successfully!');
+    }
+
+    /**
+     * POST /admin/sync-images
+     * Batch re-fetch backdrop_url + poster_url from TMDB for all movies.
+     * Only works if TMDB_API_TOKEN is configured in .env
+     * Returns JSON: { updated, skipped, failed }
+     */
+    public function syncImages()
+    {
+        $token = env('TMDB_API_TOKEN', '');
+        if (empty($token) || $token === 'YOUR_TMDB_READ_ACCESS_TOKEN_HERE') {
+            return $this->response
+                ->setStatusCode(400)
+                ->setContentType('application/json')
+                ->setBody(json_encode([
+                    'status' => 'error',
+                    'message' => 'TMDB_API_TOKEN is not configured in .env',
+                ]));
+        }
+
+        $tmdb = new TmdbService();
+        $movies = $this->movieModel
+            ->where('tmdb_id IS NOT NULL')
+            ->where('tmdb_id !=', 0)
+            ->findAll();
+
+        $updated = 0;
+        $skipped = 0;
+        $failed = 0;
+
+        foreach ($movies as $movie) {
+            $detail = $tmdb->getMovieDetail((int) $movie['tmdb_id']);
+
+            if (!$detail || isset($detail['error'])) {
+                $failed++;
+                continue;
+            }
+
+            $newBackdrop = $tmdb->backdropUrl($detail['backdrop_path'] ?? null);
+            $newPoster = $tmdb->posterUrl($detail['poster_path'] ?? null);
+
+            $changed = ($newBackdrop !== $movie['backdrop_url'] && !str_contains($newBackdrop, 'placehold'))
+                || ($newPoster !== $movie['poster_url'] && !str_contains($newPoster, 'placehold'));
+
+            if ($changed) {
+                $this->movieModel->update($movie['id'], [
+                    'backdrop_url' => str_contains($newBackdrop, 'placehold') ? $movie['backdrop_url'] : $newBackdrop,
+                    'poster_url' => str_contains($newPoster, 'placehold') ? $movie['poster_url'] : $newPoster,
+                ]);
+                $updated++;
+            } else {
+                $skipped++;
+            }
+
+            // Respect TMDB rate limit (~40 req/10s)
+            usleep(260000);
+        }
+
+        return $this->response
+            ->setStatusCode(200)
+            ->setContentType('application/json')
+            ->setBody(json_encode([
+                'status' => 'success',
+                'message' => "Sync complete: {$updated} updated, {$skipped} skipped, {$failed} failed",
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'failed' => $failed,
+            ]));
     }
 }

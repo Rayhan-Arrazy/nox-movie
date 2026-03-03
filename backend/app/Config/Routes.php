@@ -42,15 +42,37 @@ $routes->group('admin', ['filter' => 'admin'], function ($routes) {
     $routes->get('movies/delete/(:num)', 'AdminController::deleteMovie/$1');
     $routes->get('users', 'AdminController::users');
     $routes->get('users/delete/(:num)', 'AdminController::deleteUser/$1');
+    $routes->post('sync-images', 'AdminController::syncImages'); // Bulk backdrop/poster refresh from TMDB
 });
 
 // ----- API Routes (JSON) -----
 $routes->group('api', function ($routes) {
-    // Local movie API
+    // Local movie API (DB-backed, public)
     $routes->get('movies/featured', 'Api\MovieController::featured');
     $routes->get('movies/trending', 'Api\MovieController::trending');
     $routes->get('movies/genres', 'Api\MovieController::genres');
     $routes->resource('movies', ['controller' => 'Api\MovieController']);
+
+    // User features API (DB-backed, auth required)
+    $routes->group('user', ['filter' => 'auth'], function ($routes) {
+        // Load all user state at once (favorites IDs + watchlist IDs + history)
+        $routes->get('state', 'Api\UserController::state');
+
+        // Favorites
+        $routes->get('favorites', 'Api\UserController::favorites');
+        $routes->post('favorites/(:num)', 'Api\UserController::toggleFavorite/$1');
+        $routes->delete('favorites', 'Api\UserController::clearFavorites');
+
+        // Watchlist / Collections
+        $routes->get('watchlist', 'Api\UserController::watchlist');
+        $routes->post('watchlist/(:num)', 'Api\UserController::toggleWatchlist/$1');
+        $routes->delete('watchlist', 'Api\UserController::clearWatchlist');
+
+        // Watch History
+        $routes->get('history', 'Api\UserController::history');
+        $routes->post('history/(:num)', 'Api\UserController::recordHistory/$1');
+        $routes->delete('history', 'Api\UserController::clearHistory');
+    });
 
     // TMDB Proxy API
     $routes->group('tmdb', function ($routes) {

@@ -16,23 +16,7 @@
     </div>
 </section>
 
-<!-- Continue Watching (if logged in) -->
-<?php if (session()->get('isLoggedIn')): ?>
-    <section id="continue-watching-section" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-8 relative z-10 mb-6">
-        <div class="bg-[#0f0f22] rounded-2xl p-5 border border-white/5">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="play-circle" class="w-5 h-5 text-[#7c5cfc]"></i>
-                    <h2 class="text-base font-semibold font-display text-white">Continue Watching</h2>
-                </div>
-                <a href="/browse" class="text-xs text-[#7c5cfc] hover:underline">Browse more</a>
-            </div>
-            <div id="continue-watching" class="scroll-container flex gap-3">
-                <p class="text-sm text-[#6b6b9a] py-4">Movies you watch will appear here.</p>
-            </div>
-        </div>
-    </section>
-<?php endif; ?>
+
 
 <!-- Movie Sections -->
 <div id="movie-sections" class="relative z-10 space-y-2 pb-10">
