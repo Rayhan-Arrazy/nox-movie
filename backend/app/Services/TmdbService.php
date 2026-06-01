@@ -15,31 +15,31 @@ namespace App\Services;
  */
 class TmdbService
 {
-    private string $baseUrl  = 'https://api.themoviedb.org/3';
-    private string $imageUrl = 'https://image.tmdb.org/t/p';
+    // private string $baseUrl  = 'https://api.themoviedb.org/3';
+    // private string $imageUrl = 'https://image.tmdb.org/t/p';
     private string $token;
 
     // Genre id → name map (TMDB genre IDs for movies)
     private array $genreMap = [
-        28    => 'Action',
-        12    => 'Adventure',
-        16    => 'Animation',
-        35    => 'Comedy',
-        80    => 'Crime',
-        99    => 'Documentary',
-        18    => 'Drama',
+        28 => 'Action',
+        12 => 'Adventure',
+        16 => 'Animation',
+        35 => 'Comedy',
+        80 => 'Crime',
+        99 => 'Documentary',
+        18 => 'Drama',
         10751 => 'Family',
-        14    => 'Fantasy',
-        36    => 'History',
-        27    => 'Horror',
+        14 => 'Fantasy',
+        36 => 'History',
+        27 => 'Horror',
         10402 => 'Music',
-        9648  => 'Mystery',
+        9648 => 'Mystery',
         10749 => 'Romance',
-        878   => 'Sci-Fi',
+        878 => 'Sci-Fi',
         10770 => 'TV Movie',
-        53    => 'Thriller',
+        53 => 'Thriller',
         10752 => 'War',
-        37    => 'Western',
+        37 => 'Western',
     ];
 
     public function __construct()
@@ -71,10 +71,10 @@ class TmdbService
 
         $ch = curl_init();
         curl_setopt_array($ch, [
-            CURLOPT_URL            => $url,
+            CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_HTTPHEADER     => [
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $this->token,
                 'Accept: application/json',
             ],
@@ -134,28 +134,28 @@ class TmdbService
     public function mapMovie(array $m): array
     {
         $title = $m['title'] ?? $m['original_title'] ?? 'Unknown';
-        $year  = isset($m['release_date']) ? (int) substr($m['release_date'], 0, 4) : date('Y');
+        $year = isset($m['release_date']) ? (int) substr($m['release_date'], 0, 4) : date('Y');
         $genre = !empty($m['genre_ids'])
             ? $this->genreNamesFromIds($m['genre_ids'])
             : ($m['genres'][0]['name'] ?? 'Other');
 
         return [
-            'tmdb_id'      => $m['id'],
-            'title'        => $title,
-            'slug'         => url_title($title . '-' . $m['id'], '-', true),
-            'description'  => $m['overview'] ?? '',
-            'genre'        => $genre,
-            'year'         => $year,
-            'duration'     => $m['runtime'] ?? 120,
-            'rating'       => round($m['vote_average'] ?? 0, 1),
-            'poster_url'   => $this->posterUrl($m['poster_path'] ?? null),
+            'tmdb_id' => $m['id'],
+            'title' => $title,
+            'slug' => url_title($title . '-' . $m['id'], '-', true),
+            'description' => $m['overview'] ?? '',
+            'genre' => $genre,
+            'year' => $year,
+            'duration' => $m['runtime'] ?? 120,
+            'rating' => round($m['vote_average'] ?? 0, 1),
+            'poster_url' => $this->posterUrl($m['poster_path'] ?? null),
             'backdrop_url' => $this->backdropUrl($m['backdrop_path'] ?? null),
-            'trailer_url'  => '',
-            'video_url'    => '',
-            'director'     => '',
-            'cast'         => '',
-            'is_featured'  => ($m['vote_average'] ?? 0) >= 7.5 ? 1 : 0,
-            'is_trending'  => ($m['popularity'] ?? 0) >= 100 ? 1 : 0,
+            'trailer_url' => '',
+            'video_url' => '',
+            'director' => '',
+            'cast' => '',
+            'is_featured' => ($m['vote_average'] ?? 0) >= 7.5 ? 1 : 0,
+            'is_trending' => ($m['popularity'] ?? 0) >= 100 ? 1 : 0,
         ];
     }
 
@@ -197,7 +197,7 @@ class TmdbService
     public function getMovieDetail(int $id): ?array
     {
         return $this->get("/movie/{$id}", [
-            'language'           => 'en-US',
+            'language' => 'en-US',
             'append_to_response' => 'credits,videos',
         ]);
     }
@@ -206,8 +206,8 @@ class TmdbService
     public function searchMovies(string $query, int $page = 1): ?array
     {
         return $this->get('/search/movie', [
-            'query'    => $query,
-            'page'     => $page,
+            'query' => $query,
+            'page' => $page,
             'language' => 'en-US',
         ]);
     }

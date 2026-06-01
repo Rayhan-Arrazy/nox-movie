@@ -26,7 +26,7 @@ class AuthController extends BaseController
 
     /**
      * Process login
-     */
+     */ 
     public function attemptLogin()
     {
         $rules = [
